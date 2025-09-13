@@ -27,6 +27,7 @@ class MediaPickerServiceProvider extends ServiceProvider
 
         // Register Blade component
         Blade::component('media-picker::components.media-picker', 'ms-media-picker');
+        Blade::component('media-picker::components.media-editor', 'ms-media-editor');
     }
 
     public function register()
