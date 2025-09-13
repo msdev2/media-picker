@@ -11,3 +11,8 @@ Route::prefix('media-picker')->name('media-picker.')->group(function () {
     Route::post('/delete', [MediaController::class, 'delete'])->name('delete');
     Route::get('/render/{path}', [MediaController::class, 'renderFile'])->name('renderFile');
 });
+Route::get('uploads/{folder}/{width}/{height}/{name}', [MediaController::class, 'getImage'])
+    ->where('name', '.*'); // Allow dots in filenames
+
+Route::get('uploads/{folder}/{name}', [MediaController::class, 'getMainImage'])
+    ->where('name', '.*'); // Allow dots in filenames

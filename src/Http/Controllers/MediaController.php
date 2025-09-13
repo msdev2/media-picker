@@ -7,6 +7,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use League\Glide\Server;
 
 class MediaController extends Controller
 {
@@ -17,6 +18,53 @@ class MediaController extends Controller
     {
         $this->disk = config('media-picker.disk', 'public');
         $this->baseDir = config('media-picker.base_directory', 'uploads');
+    }
+     /**
+     * Generate a resized image using Glide.
+     * Laravel will automatically inject the configured Glide Server.
+     */
+    public function getImage(Request $request, Server $server, $folder, $width, $height, $name)
+    {
+        $queryParams = [];
+        $queryParams["fit"] = "crop"; // Default fit
+
+        if ($width === "w") {
+            $queryParams["w"] = $height; // Width is specified
+        } else if ($width === "h") {
+            $queryParams["h"] = $height; // Height is specified
+        } else {
+            $queryParams["w"] = $width;
+            $queryParams["h"] = $height;
+        }
+
+        // The path must be relative to the 'source' disk's 'source_path_prefix'
+        // In our case, config('glide.source_path_prefix') is 'uploads',
+        // so we just need to pass the path *inside* uploads.
+        $sourcePath = $folder . '/' . $name;
+
+        return $server->outputImage($sourcePath, array_merge($queryParams, $request->all()));
+    }
+
+    
+    /**
+     * THIS IS THE CORRECTED METHOD
+     * Serve an original, unmodified image in a driver-agnostic way.
+     */
+    public function getMainImage($folder, $name)
+    {
+        // Path relative to the root of the configured disk
+        $filePath = "{$this->baseDir}/{$folder}/{$name}";
+
+        if (! Storage::disk($this->disk)->exists($filePath)) {
+            abort(404, 'File not found.');
+        }
+
+        // Get contents and mime type using universal methods
+        $contents = Storage::disk($this->disk)->get($filePath);
+        $mime = $this->getMimeTypeFromContents($contents); // Reuse our existing helper!
+
+        // Return a generic response which works for all drivers (S3, local, etc.)
+        return response($contents)->header('Content-Type', $mime);
     }
      /**
      * Render files securely and in a driver-agnostic way.
