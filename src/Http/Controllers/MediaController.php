@@ -4,148 +4,194 @@ namespace Msdev2\MediaPicker\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
-use League\Glide\Server;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class MediaController extends Controller
 {
-    protected string $basePath = 'public/uploads';
+    private $disk;
+    private $baseDir;
 
-    /**
-     * Show the media picker UI
-     */
-    public function index(Request $request)
+    public function __construct()
     {
-        $folder = $request->get('folder', 'media');
-        $path = "{$this->basePath}/{$folder}";
+        $this->disk = config('media-picker.disk', 'public');
+        $this->baseDir = config('media-picker.base_directory', 'uploads');
+    }
+     /**
+     * Render files securely and in a driver-agnostic way.
+     */
+    public function renderFile($path)
+    {
+        $decodedPath = base64_decode($path);
 
-        // List all folders
-        $folders = collect(Storage::directories($this->basePath))
-            ->map(fn ($dir) => basename($dir))
-            ->values();
+        if (!Storage::disk($this->disk)->exists($decodedPath)) {
+            abort(404);
+        }
 
-        // List all files in current folder
-        $files = collect(Storage::files($path))->map(function ($file) use ($folder) {
-            return [
-                'name' => basename($file),
-                'url'  => Storage::url($file),
-                'type' => str_starts_with(Storage::mimeType($file), 'image') ? 'image' : 'file',
-            ];
-        });
+        // Get file contents and mime type using universal methods
+        $contents = Storage::disk($this->disk)->get($decodedPath);
+        $mime = $this->getMimeTypeFromContents($contents);
 
-        return view('media-picker::media-picker.index', [
-            'folders'       => $folders,
-            'files'         => $files,
-            'currentFolder' => $folder,
-        ]);
+        // Only serve image files for direct preview to prevent security risks
+        if (!Str::startsWith($mime, 'image/')) {
+            abort(403, 'File type not supported for preview.');
+        }
+        
+        // THIS IS THE KEY CHANGE:
+        // Use a generic response instead of response()->file() which requires a local path
+        return response($contents)->header('Content-Type', $mime);
     }
 
-    /**
-     * Handle file upload
-     */
-    public function upload(Request $request)
+    public function index()
     {
-        $request->validate([
-            'file'   => 'required|file|max:5120', // 5MB limit
-            'folder' => 'required|string',
-        ]);
-
-        $folder = $request->input('folder', 'media');
-        $path   = "{$this->basePath}/{$folder}";
-
-        $file     = $request->file('file');
-        $filename = time().'_'.$file->getClientOriginalName();
-
-        Storage::putFileAs($path, $file, $filename);
-
-        return response()->json([
-            'success' => true,
-            'url'     => Storage::url("{$path}/{$filename}"),
-        ]);
+        return view('media-picker::media-picker.index');
     }
 
-    /**
-     * Create a new folder
-     */
+     public function getContents(Request $request)
+    {
+        $folder = $request->input('folder', '/');
+        $path = $this->cleanPath($this->baseDir . '/' . $folder);
+
+        $directories = Storage::disk($this->disk)->directories($path);
+        $files = Storage::disk($this->disk)->files($path);
+
+        $contents = [
+            'directories' => array_map([$this, 'formatDirectory'], $directories),
+            'files' => array_map([$this, 'formatFile'], $files),
+            'breadcrumbs' => $this->generateBreadcrumbs($folder),
+        ];
+
+        return response()->json($contents);
+    }
+
     public function createFolder(Request $request)
     {
-        $request->validate([
-            'folder' => 'required|string',
+        $validator = Validator::make($request->all(), [
+            'folder_name' => 'required|string|max:255',
+            'current_path' => 'required|string',
         ]);
 
-        $folder = $request->input('folder');
-        $path   = "{$this->basePath}/{$folder}";
-
-        if (Storage::exists($path)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Folder already exists',
-            ], 422);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
         }
 
-        Storage::makeDirectory($path);
+        $newFolderPath = $this->cleanPath($this->baseDir . '/' . $request->current_path . '/' . $request->folder_name);
 
-        return response()->json(['success' => true]);
+        if (Storage::disk($this->disk)->exists($newFolderPath)) {
+            return response()->json(['success' => false, 'message' => 'Folder already exists.'], 409);
+        }
+
+        Storage::disk($this->disk)->makeDirectory($newFolderPath);
+
+        return response()->json(['success' => true, 'message' => 'Folder created successfully.']);
     }
 
-    /**
-     * Delete a file
-     */
-    public function deleteFile(Request $request)
+    public function upload(Request $request)
     {
-        $request->validate([
-            'file' => 'required|string',
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file',
+            'current_path' => 'required|string',
         ]);
 
-        $file = $request->input('file');
-
-        if (Storage::exists($file)) {
-            Storage::delete($file);
-            return response()->json(['success' => true]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
         }
+        
+        $file = $request->file('file');
+        $path = $this->cleanPath($this->baseDir . '/' . $request->current_path);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'File not found',
-        ], 404);
+        $file->store($path, ['disk' => $this->disk]);
+
+        return response()->json(['success' => true, 'message' => 'File uploaded successfully.']);
     }
 
-    /**
-     * Serve an image with Glide (resize/crop)
-     */
-    public function getImage(Request $request, Server $server, $folder, $width, $height, $name)
+    public function delete(Request $request)
     {
-        $params = ['fit' => 'crop'];
+        $validator = Validator::make($request->all(), [
+            'path' => 'required|string',
+            'type' => 'required|in:file,directory',
+        ]);
 
-        if ($width === 'w') {
-            $params['w'] = $height;
-        } elseif ($width === 'h') {
-            $params['h'] = $height;
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+        
+        $path = $this->cleanPath($request->path);
+
+        if (!Storage::disk($this->disk)->exists($path)) {
+             return response()->json(['success' => false, 'message' => 'Item not found.'], 404);
+        }
+
+        if ($request->type === 'file') {
+            Storage::disk($this->disk)->delete($path);
         } else {
-            $params['w'] = $width;
-            $params['h'] = $height;
+            Storage::disk($this->disk)->deleteDirectory($path);
         }
 
-        $query = array_merge($params, $request->all());
+        return response()->json(['success' => true, 'message' => 'Item deleted successfully.']);
+    }
 
-        return $server->outputImage("{$folder}/{$name}", $query);
+    // --- Helper methods ---
+    private function cleanPath($path)
+    {
+        return str_replace('//', '/', $path);
+    }
+    
+     private function formatFile($path)
+    {
+        // THIS IS THE KEY CHANGE:
+        // We get the file contents to determine if it's an image.
+        // This can be slightly less performant for very large files,
+        // but it is completely driver-agnostic.
+        $contents = Storage::disk($this->disk)->get($path);
+        $mime = $this->getMimeTypeFromContents($contents);
+        $isImage = Str::startsWith($mime, 'image/');
+        
+        $url = route('media-picker.renderFile', ['path' => base64_encode($path)]);
+
+        return [
+            'name' => basename($path),
+            'path' => $path,
+            'url' => $url,
+            'type' => 'file',
+            'is_image' => $isImage,
+            'size' => strlen($contents), // Get size from contents
+            'last_modified' => Storage::disk($this->disk)->lastModified($path), // This method is usually safe
+        ];
     }
 
     /**
-     * Serve original file
+     * New helper to get MIME type from file contents.
      */
-    public function getMainImage($folder, $name)
+    private function getMimeTypeFromContents(string $contents): string
     {
-        $filePath = storage_path("app/public/uploads/{$folder}/{$name}");
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        return $finfo->buffer($contents);
+    }
 
-        if (!File::exists($filePath)) {
-            abort(404, 'File not found');
+    private function formatDirectory($path)
+    {
+        return [
+            'name' => basename($path),
+            'path' => str_replace($this->baseDir . '/', '', $path),
+            'type' => 'directory',
+        ];
+    }
+    private function generateBreadcrumbs($folder)
+    {
+        $breadcrumbs = [];
+        $pathParts = explode('/', trim($folder, '/'));
+        $currentPath = '';
+
+        $breadcrumbs[] = ['name' => 'Home', 'path' => '/'];
+
+        foreach ($pathParts as $part) {
+            if (empty($part)) continue;
+            $currentPath .= '/' . $part;
+            $breadcrumbs[] = ['name' => $part, 'path' => $currentPath];
         }
 
-        $file = File::get($filePath);
-        $type = File::mimeType($filePath);
-
-        return response($file, 200)->header('Content-Type', $type);
+        return $breadcrumbs;
     }
 }

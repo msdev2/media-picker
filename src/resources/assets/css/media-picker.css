@@ -1,43 +1,25 @@
-/* Scoped media picker styles */
-.media-picker {
-  font-family: system-ui, sans-serif;
-  padding: 1rem;
-}
+/* Basic styling for the media picker */
+.ms-media-picker-container { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; border: 1px solid #ddd; background: #fff; position: relative; }
+.ms-media-header { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #ddd; background: #f9f9f9; }
+.ms-media-breadcrumbs { display: flex; gap: 5px; }
+.ms-media-breadcrumbs a { text-decoration: none; color: #0073aa; }
+.ms-media-breadcrumbs span { color: #555; }
+.ms-media-actions { display: flex; gap: 10px; }
+.ms-media-btn { border: 1px solid #ccc; background: #f3f3f3; padding: 8px 12px; cursor: pointer; border-radius: 3px; font-size: 14px; }
+.ms-media-btn-primary { background: #0073aa; color: #fff; border-color: #0073aa; }
+.ms-media-btn:disabled { cursor: not-allowed; background: #eee; color: #999; }
+.ms-media-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 10px; min-height: 400px; max-height: 60vh; overflow-y: auto; }
+.ms-media-item { cursor: pointer; border: 2px solid transparent; padding: 5px; text-align: center; }
+.ms-media-item.selected { border-color: #0073aa; background: #f0f6fa; }
+.ms-media-item-icon { font-size: 60px; line-height: 1; margin-bottom: 5px; }
+.ms-media-item-name { word-break: break-all; font-size: 13px; }
+.ms-media-item img { max-width: 100%; height: 100px; object-fit: cover; }
+.ms-media-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-top: 1px solid #ddd; background: #f9f9f9; }
+.ms-media-loader { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; }
+.spinner { border: 4px solid #f3f3f3; border-top: 4px solid #0073aa; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.media-picker .media-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 120px);
-  gap: 12px;
-}
-
-.media-picker .media-item {
-  border: 1px solid #ddd;
-  padding: 6px;
-  border-radius: 6px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.media-picker .media-item img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-}
-
-.media-picker .folder-list {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 1rem;
-}
-
-.media-picker .folder-item {
-  padding: 6px 10px;
-  background: #f3f3f3;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.media-picker .folder-item.active {
-  background: #007bff;
-  color: #fff;
-}
+/* Modal Styles */
+.ms-media-picker-modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+.ms-media-picker-modal-content { background: #fff; width: 90%; max-width: 1000px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-radius: 5px; position: relative; }
+.ms-media-modal-close { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
