@@ -1,0 +1,30 @@
+{
+    "name": "msdev2/media-picker",
+    "description": "A simple Laravel media picker (file manager) package",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mragank",
+            "email": "mragankshekhar@gmail.com"
+        }
+    ],
+    "require": {
+        "laravel/framework": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+        "league/glide-laravel": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Msdev2\\MediaPicker\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Msdev2\\MediaPicker\\MediaPickerServiceProvider"
+            ]
+        }
+    }
+}

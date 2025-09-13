@@ -1,0 +1,43 @@
+/* Scoped media picker styles */
+.media-picker {
+  font-family: system-ui, sans-serif;
+  padding: 1rem;
+}
+
+.media-picker .media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 120px);
+  gap: 12px;
+}
+
+.media-picker .media-item {
+  border: 1px solid #ddd;
+  padding: 6px;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.media-picker .media-item img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.media-picker .folder-list {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.media-picker .folder-item {
+  padding: 6px 10px;
+  background: #f3f3f3;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.media-picker .folder-item.active {
+  background: #007bff;
+  color: #fff;
+}
