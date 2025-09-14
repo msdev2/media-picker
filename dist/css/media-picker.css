@@ -1,0 +1,792 @@
+/* --- Base Styles for All Prompt/Dialog Modals --- */
+.ms-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ms-dialog-content {
+  background: #fff;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 5px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  animation: ms-dialog-fade-in 0.2s ease-out;
+}
+
+.ms-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+}
+.ms-dialog-header h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.ms-dialog-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+.ms-dialog-close:hover {
+  color: #000;
+}
+
+.ms-dialog-body {
+  padding: 20px;
+}
+
+.ms-dialog-group {
+  margin-bottom: 15px;
+}
+.ms-dialog-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+.ms-dialog-group input[type=text], .ms-dialog-group input[type=url] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+.ms-dialog-group.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms-dialog-group.checkbox label {
+  margin-bottom: 0;
+  font-weight: normal;
+}
+
+.ms-dialog-footer {
+  padding: 15px 20px;
+  background: #f7f7f7;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-radius: 0 0 5px 5px;
+}
+
+@keyframes ms-dialog-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+#ms-modal-picker-placeholder {
+  height: 100%;
+}
+
+.ms-media-picker-container {
+  border: 1px solid #ddd;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.ms-media-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  background: #f9f9f9;
+  flex-shrink: 0;
+}
+
+.ms-media-breadcrumbs {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.ms-media-breadcrumbs a {
+  text-decoration: none;
+  color: #0073aa;
+}
+.ms-media-breadcrumbs span {
+  color: #555;
+}
+
+.ms-media-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ms-media-btn {
+  border: 1px solid #ccc;
+  background: #f3f3f3;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 14px;
+}
+.ms-media-btn:disabled {
+  cursor: not-allowed;
+  background: #eee;
+  color: #999;
+}
+
+.ms-media-btn-primary {
+  background: #0073aa;
+  color: #fff;
+  border-color: #0073aa;
+}
+
+.ms-media-btn-danger {
+  background: #d63638;
+  color: #fff;
+  border-color: #d63638;
+}
+
+.ms-media-body-wrapper {
+  display: flex;
+  min-height: 400px;
+  flex-grow: 1;
+  position: relative;
+}
+
+.ms-media-body {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  align-content: flex-start;
+}
+
+.ms-media-item {
+  cursor: pointer;
+  border: 2px solid transparent;
+  padding: 5px;
+  text-align: center;
+  border-radius: 4px;
+  position: relative;
+}
+.ms-media-item img {
+  max-width: 100%;
+  height: 100px;
+  -o-object-fit: cover;
+     object-fit: cover;
+  display: block;
+  margin-bottom: 5px;
+}
+.ms-media-item .ms-media-item-icon {
+  font-size: 60px;
+  line-height: 1;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ms-media-item.selected {
+  border-color: #0073aa;
+  background: #f0f6fa;
+}
+
+.ms-media-item-name {
+  word-break: break-all;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ms-media-actions-panel {
+  width: 300px;
+  flex-shrink: 0;
+  background: #f9f9f9;
+  border-left: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.actions-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.actions-panel-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.actions-panel-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.actions-panel-preview {
+  margin-bottom: 15px;
+  text-align: center;
+  background: #fff;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+.actions-panel-preview img {
+  max-width: 100%;
+  height: auto;
+  max-height: 200px;
+}
+.actions-panel-preview .file-icon {
+  font-size: 80px;
+  line-height: 1;
+  padding: 20px 0;
+}
+
+.actions-panel-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 15px;
+  font-size: 13px;
+  color: #555;
+  word-break: break-all;
+}
+
+.actions-panel-tools {
+  margin-bottom: 15px;
+}
+.actions-panel-tools label {
+  font-weight: bold;
+  font-size: 13px;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.url-group {
+  display: flex;
+}
+.url-group input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  font-size: 12px;
+}
+
+.resize-group {
+  margin-top: 10px;
+}
+
+.actions-panel-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.ms-media-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  background: #f9f9f9;
+  flex-shrink: 0;
+}
+
+.ms-media-loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.ms-media-loader .spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #0073aa;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.ms-media-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #f0f0f1;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 10px 15px;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+  color: #333;
+}
+
+.ms-media-folder-tree {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.ms-media-folder-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 20px;
+  border-left: 1px dashed #ccc;
+}
+.ms-media-folder-tree li {
+  position: relative;
+  margin: 4px 0;
+}
+.ms-media-folder-tree li::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: -20px;
+  width: 20px;
+  height: 1px;
+  background: #ccc;
+}
+.ms-media-folder-tree a {
+  display: inline-block;
+  padding: 4px 6px;
+  color: #333;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+.ms-media-folder-tree a:hover {
+  background: #f0f0f0;
+}
+.ms-media-folder-tree a.active {
+  background: #007bff;
+  color: #fff;
+  font-weight: bold;
+}
+.ms-media-folder-tree a::before {
+  margin-right: 4px;
+}
+
+.ms-media-editor-container {
+  border: 1px solid #ccc;
+  background: #fff;
+  margin-top: 1rem;
+}
+
+.ms-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+  background: #f7f7f7;
+}
+
+.ms-editor-tool {
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 16px;
+  min-width: 32px;
+  height: 32px;
+  margin: 2px;
+  padding: 0 5px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ccc;
+}
+.ms-editor-tool:hover {
+  background: #e9e9e9;
+  border-color: #ccc;
+}
+.ms-editor-tool.active {
+  background-color: #d9d9d9;
+  border-color: #b0b0b0;
+}
+
+.ms-editor-dropdown {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  height: 32px;
+  padding: 0 10px;
+}
+
+.ms-editor-content-wrapper {
+  position: relative;
+  overflow-y: auto;
+}
+
+.ms-editor-content {
+  padding: 15px;
+  outline: none;
+}
+.ms-editor-content p {
+  margin-top: 0;
+}
+
+.ms-editor-code {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: monospace;
+  background-color: #f5f5f5;
+  color: #333;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+}
+
+/* --- Enhanced Toolbar Styles --- */
+.ms-editor-separator {
+  border-left: 1px solid #ccc;
+  height: 24px;
+  margin: 4px 8px;
+}
+
+.ms-editor-tool-wrapper {
+  position: relative;
+}
+.ms-editor-tool-wrapper label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ms-editor-tool-wrapper input[type=color] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ms-media-picker-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ms-media-picker-modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 1000px;
+  height: 90vh;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.ms-media-picker-modal-content .ms-media-picker-container {
+  flex-grow: 1;
+  border: none;
+}
+
+.ms-media-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  z-index: 10;
+}
+.ms-media-modal-close:hover {
+  color: #000;
+}
+
+/* --- Folder Selector Modal --- */
+.ms-media-folder-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1050;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ms-media-folder-modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 5px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+.ms-media-folder-modal-content h4 {
+  margin: 0;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.ms-media-folder-modal-tree {
+  padding: 10px 0;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.ms-media-folder-modal-tree ul, .ms-media-folder-modal-tree li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ms-media-folder-modal-tree a {
+  display: block;
+  padding: 8px 20px;
+  text-decoration: none;
+  color: #1d2327;
+  cursor: pointer;
+}
+.ms-media-folder-modal-tree a:hover {
+  background-color: #f0f0f1;
+}
+.ms-media-folder-modal-tree a.selected {
+  background-color: #0073aa;
+  color: #fff;
+}
+
+.ms-media-folder-modal-actions {
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* --- Insert/Edit Media Modal --- */
+.ms-media-edit-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ms-media-edit-modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 600px;
+  border-radius: 5px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.ms-media-edit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #ddd;
+}
+.ms-media-edit-modal-header h4 {
+  margin: 0;
+}
+
+.ms-media-edit-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.ms-media-edit-modal-body {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+}
+
+.ms-media-edit-preview {
+  flex-basis: 40%;
+  text-align: center;
+}
+.ms-media-edit-preview img, .ms-media-edit-preview video {
+  max-width: 100%;
+  display: none;
+}
+
+.ms-media-edit-fields {
+  flex-basis: 60%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.ms-media-edit-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+.ms-media-edit-group input, .ms-media-edit-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.ms-media-edit-dims {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-media-edit-modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ms-link-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ms-link-modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 5px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.ms-link-modal-body {
+  padding: 20px;
+}
+
+.ms-link-modal-group {
+  margin-bottom: 15px;
+}
+.ms-link-modal-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+.ms-link-modal-group input[type=text] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+.ms-link-modal-group.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms-link-modal-group.checkbox label {
+  margin-bottom: 0;
+  font-weight: normal;
+}
+
+.ms-media-picker-modal-content {
+  height: 90vh;
+}
+
+.ms-media-edit-modal-content {
+  max-width: 600px;
+}
+
+/* --- Toast Notification Styles --- */
+#ms-toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ms-toast {
+  background-color: #333;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: ms-toast-fade-in 0.3s forwards;
+}
+
+.ms-toast.error {
+  background-color: #d63638;
+}
+
+@keyframes ms-toast-fade-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,70 @@
+/* --- Base Styles for All Prompt/Dialog Modals --- */
+.ms-dialog-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.65);
+    z-index: 1100; // Above the main picker
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ms-dialog-content {
+    background: #fff;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    animation: ms-dialog-fade-in 0.2s ease-out;
+}
+
+.ms-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #ddd;
+    h4 { margin: 0; font-size: 16px; }
+}
+
+.ms-dialog-close {
+    background: none; border: none; font-size: 24px; cursor: pointer; color: #666;
+    &:hover { color: #000; }
+}
+
+.ms-dialog-body {
+    padding: 20px;
+}
+
+.ms-dialog-group {
+    margin-bottom: 15px;
+    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+    input[type="text"], input[type="url"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; }
+    &.checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        label { margin-bottom: 0; font-weight: normal; }
+    }
+}
+
+.ms-dialog-footer {
+    padding: 15px 20px;
+    background: #f7f7f7;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-radius: 0 0 5px 5px;
+}
+
+@keyframes ms-dialog-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

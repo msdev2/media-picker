@@ -10,6 +10,8 @@ Route::prefix('media-picker')->name('media-picker.')->group(function () {
     Route::post('/upload', [MediaController::class, 'upload'])->name('upload');
     Route::post('/delete', [MediaController::class, 'delete'])->name('delete');
     Route::get('/render/{path}', [MediaController::class, 'renderFile'])->name('renderFile');
+    Route::post('/rename', [MediaController::class, 'rename'])->name('rename');
+    Route::post('/move', [MediaController::class, 'move'])->name('move');
 });
 Route::get('uploads/{folder}/{width}/{height}/{name}', [MediaController::class, 'getImage'])
     ->where('name', '.*'); // Allow dots in filenames

@@ -1,0 +1,203 @@
+.ms-media-picker-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ms-media-picker-modal-content {
+    background: #fff;
+    width: 90%;
+    max-width: 1000px;
+    height: 90vh;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border-radius: 5px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    .ms-media-picker-container {
+        flex-grow: 1;
+        border: none;
+    }
+}
+
+.ms-media-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    z-index: 10;
+    &:hover {
+        color: #000;
+    }
+}
+/* --- Folder Selector Modal --- */
+.ms-media-folder-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 1050; // Higher than the main modal
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ms-media-folder-modal-content {
+    background: #fff;
+    width: 90%;
+    max-width: 400px;
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+
+    h4 {
+        margin: 0;
+        padding: 15px 20px;
+        border-bottom: 1px solid #ddd;
+    }
+}
+
+.ms-media-folder-modal-tree {
+    padding: 10px 0;
+    max-height: 40vh;
+    overflow-y: auto;
+
+    ul, li { list-style: none; padding: 0; margin: 0; }
+    
+    a {
+        display: block;
+        padding: 8px 20px;
+        text-decoration: none;
+        color: #1d2327;
+        cursor: pointer;
+        &:hover { background-color: #f0f0f1; }
+        &.selected { background-color: #0073aa; color: #fff; }
+    }
+}
+
+.ms-media-folder-modal-actions {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+/* --- Insert/Edit Media Modal --- */
+.ms-media-edit-modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 1100; // Higher than picker modal
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ms-media-edit-modal-content {
+    background: #fff;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.ms-media-edit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #ddd;
+    h4 { margin: 0; }
+}
+.ms-media-edit-modal-close { background: none; border: none; font-size: 24px; cursor: pointer; }
+
+.ms-media-edit-modal-body {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+.ms-media-edit-preview {
+    flex-basis: 40%;
+    text-align: center;
+    img, video { max-width: 100%; display: none; }
+}
+
+.ms-media-edit-fields {
+    flex-basis: 60%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.ms-media-edit-group {
+    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+    input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; }
+}
+
+.ms-media-edit-dims {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ms-media-edit-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+.ms-link-modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 1100; // Same level as media edit modal
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ms-link-modal-content {
+    background: #fff;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.ms-link-modal-body {
+    padding: 20px;
+}
+
+.ms-link-modal-group {
+    margin-bottom: 15px;
+    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+    input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 3px; }
+    &.checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        label { margin-bottom: 0; font-weight: normal; }
+    }
+}
+.ms-media-picker-modal-content {
+    height: 90vh;
+}
+.ms-media-edit-modal-content {
+    max-width: 600px;
+}

@@ -19,6 +19,63 @@ class MediaController extends Controller
         $this->disk = config('media-picker.disk', 'public');
         $this->baseDir = config('media-picker.base_directory', 'uploads');
     }
+     // NEW: Method to rename a file or folder
+    public function rename(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'path' => 'required|string',
+            // CRITICAL FIX: Replace the invalid rule with the correct regex rule
+            'new_name' => ['required', 'string', 'not_regex:/[\\/\\\\]/'],
+        ],[
+            'new_name.not_regex' => 'The new name cannot contain slashes.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        $oldPath = $request->path;
+        $directory = dirname($oldPath);
+        $newPath = ($directory === '.' || $directory === '/' ? '' : $directory . '/') . $request->new_name;
+
+        if (Storage::disk($this->disk)->exists($newPath)) {
+            return response()->json(['success' => false, 'message' => 'A file with that name already exists.'], 409);
+        }
+
+        Storage::disk($this->disk)->move($oldPath, $newPath);
+
+        return response()->json(['success' => true, 'message' => 'Item renamed successfully.']);
+    }
+
+    // NEW: Method to move a file to a new folder
+    public function move(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'path' => 'required|string',
+            'destination' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        $oldPath = $request->path;
+        $filename = basename($oldPath);
+        $destinationFolder = $this->cleanPath($this->baseDir . '/' . $request->destination);
+        $newPath = $this->cleanPath($destinationFolder . '/' . $filename);
+
+        if (!Storage::disk($this->disk)->exists($destinationFolder)) {
+            return response()->json(['success' => false, 'message' => 'Destination folder does not exist.'], 404);
+        }
+
+        if (Storage::disk($this->disk)->exists($newPath)) {
+            return response()->json(['success' => false, 'message' => 'A file with the same name already exists in the destination.'], 409);
+        }
+
+        Storage::disk($this->disk)->move($oldPath, $newPath);
+
+        return response()->json(['success' => true, 'message' => 'Item moved successfully.']);
+    }
      /**
      * Generate a resized image using Glide.
      * Laravel will automatically inject the configured Glide Server.
@@ -96,21 +153,79 @@ class MediaController extends Controller
         return view('media-picker::media-picker.index');
     }
 
-     public function getContents(Request $request)
+    public function getContents(Request $request)
     {
         $folder = $request->input('folder', '/');
         $path = $this->cleanPath($this->baseDir . '/' . $folder);
 
-        $directories = Storage::disk($this->disk)->directories($path);
+        // --- FILTER FOR CURRENT DIRECTORY VIEW ---
+        $directoriesRaw = Storage::disk($this->disk)->directories($path);
+        // We only need basename here as it's not a nested view
+        $directoriesFiltered = array_filter($directoriesRaw, fn($dir) => basename($dir) !== '.cache');
+        $directories = array_values($directoriesFiltered);
+
         $files = Storage::disk($this->disk)->files($path);
+        
+        // --- ROBUST FILTER FOR THE ENTIRE FOLDER TREE ---
+        $allDirectoriesRaw = Storage::disk($this->disk)->allDirectories($this->baseDir);
+        
+        // CRITICAL FIX: This new filter checks every part of the path.
+        // It will correctly remove "uploads/.cache", "uploads/avatar/.cache", etc.
+        $allDirectoriesFiltered = array_filter($allDirectoriesRaw, function($dir) {
+            return !in_array('.cache', explode('/', $dir));
+        });
+
+        // Re-index the array to ensure it becomes a valid JSON array
+        $allDirectoriesReindexed = array_values($allDirectoriesFiltered);
+        $allDirectoriesPaths = array_map(fn($dir) => str_replace($this->baseDir . '/', '', $dir), $allDirectoriesReindexed);
+        
+        $baseDirName = config('media-picker.base_directory', 'uploads');
 
         $contents = [
             'directories' => array_map([$this, 'formatDirectory'], $directories),
             'files' => array_map([$this, 'formatFile'], $files),
             'breadcrumbs' => $this->generateBreadcrumbs($folder),
+            'all_directories' => $this->buildDirectoryTree($allDirectoriesPaths, $baseDirName),
         ];
 
         return response()->json($contents);
+    }
+
+    private function buildDirectoryTree(array $paths, string $baseDirName): array
+    {
+        $tree = [['name' => ucfirst($baseDirName), 'path' => '/', 'children' => []]];
+        sort($paths);
+
+        foreach ($paths as $path) {
+            $parts = explode('/', $path);
+            $currentNode = &$tree[0];
+            $currentPath = '';
+
+            foreach ($parts as $part) {
+                $found = false;
+                $currentPath = $currentPath ? $currentPath . '/' . $part : $part;
+
+                if (!isset($currentNode['children'])) {
+                    $currentNode['children'] = [];
+                }
+
+                foreach ($currentNode['children'] as &$child) {
+                    if ($child['name'] === $part) {
+                        $currentNode = &$child;
+                        $found = true;
+                        break;
+                    }
+                }
+                unset($child);
+
+                if (!$found) {
+                    $newNode = ['name' => $part, 'path' => $currentPath, 'children' => []];
+                    $currentNode['children'][] = $newNode;
+                    $currentNode = &$currentNode['children'][count($currentNode['children']) - 1];
+                }
+            }
+        }
+        return $tree;
     }
 
     public function createFolder(Request $request)
@@ -135,21 +250,43 @@ class MediaController extends Controller
         return response()->json(['success' => true, 'message' => 'Folder created successfully.']);
     }
 
-    public function upload(Request $request)
+     public function upload(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'file' => 'required|file',
-            'current_path' => 'required|string',
-        ]);
+        $allowedMimes = config('media-picker.allowed_mime_types', []);
+        $maxSize = config('media-picker.max_upload_size_kb', 0);
+
+        $rules = [
+            'file' => ['required', 'file'],
+            'current_path' => ['required', 'string'],
+        ];
+
+        if (!empty($allowedMimes)) {
+            $rules['file'][] = 'mimetypes:' . implode(',', $allowedMimes);
+        }
+
+        if ($maxSize > 0) {
+            $rules['file'][] = 'max:' . $maxSize;
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
         }
         
         $file = $request->file('file');
-        $path = $this->cleanPath($this->baseDir . '/' . $request->current_path);
+        $location = $this->cleanPath($this->baseDir . '/' . $request->current_path);
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+        $finalName = $file->getClientOriginalName();
+        $counter = 1;
+        // CRITICAL FIX: Loop until we find a unique filename
+        while (Storage::disk($this->disk)->exists($location . '/' . $finalName)) {
+            $finalName = $originalName . '-' . $counter . '.' . $extension;
+            $counter++;
+        }
 
-        $file->store($path, ['disk' => $this->disk]);
+        $file->storeAs($location, $finalName, ['disk' => $this->disk]);
 
         return response()->json(['success' => true, 'message' => 'File uploaded successfully.']);
     }
@@ -188,24 +325,26 @@ class MediaController extends Controller
     
      private function formatFile($path)
     {
-        // THIS IS THE KEY CHANGE:
-        // We get the file contents to determine if it's an image.
-        // This can be slightly less performant for very large files,
-        // but it is completely driver-agnostic.
-        $contents = Storage::disk($this->disk)->get($path);
-        $mime = $this->getMimeTypeFromContents($contents);
-        $isImage = Str::startsWith($mime, 'image/');
+        // This method requires the `local` disk driver to be used for mime type detection.
+        // For S3 or other drivers, you would need a different strategy.
+        $isImage = Str::startsWith(Storage::disk($this->disk)->mimeType($path), 'image/');
         
-        $url = route('media-picker.renderFile', ['path' => base64_encode($path)]);
+        // The internal URL for previews inside the picker
+        $renderUrl = route('media-picker.renderFile', ['path' => base64_encode($path)]);
+
+        // THE CRITICAL FIX: The real, direct public URL for the file.
+        // This relies on the user having their filesystem correctly configured (e.g., `storage:link`).
+        $publicUrl = Storage::disk($this->disk)->url($path);
 
         return [
             'name' => basename($path),
             'path' => $path,
-            'url' => $url,
+            'url' => $renderUrl,          // Used for internal previews
+            'public_url' => $publicUrl, // The REAL public URL
             'type' => 'file',
             'is_image' => $isImage,
-            'size' => strlen($contents), // Get size from contents
-            'last_modified' => Storage::disk($this->disk)->lastModified($path), // This method is usually safe
+            'size' => Storage::disk($this->disk)->size($path),
+            'last_modified' => Storage::disk($this->disk)->lastModified($path),
         ];
     }
 

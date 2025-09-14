@@ -1,0 +1,30 @@
+{
+  "name": "media-picker",
+  "version": "1.0.0",
+  "description": "A simple, file-manager package for Laravel inspired by the WordPress media library. This package provides a straightforward way to manage files and folders, offering both an inline component and a modal-based picker for easy integration into any Laravel project.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "mix",
+    "watch": "mix watch",
+    "prod": "mix --production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msdev2/media-picker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/msdev2/media-picker/issues"
+  },
+  "homepage": "https://github.com/msdev2/media-picker#readme",
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/preset-env": "^7.28.3",
+    "laravel-mix": "^6.0.49",
+    "sass": "^1.92.1",
+    "sass-loader": "^16.0.5"
+  }
+}
