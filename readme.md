@@ -5,12 +5,12 @@ A simple, powerful, and modern file manager package for Laravel, inspired by the
 ### Features
 
 *   **File & Folder Management:** Easily navigate, create folders, upload, rename, move, and delete files.
-*   **Advanced Inline Picker:** A full-featured file manager block with a folder tree sidebar and an actions panel for selected files.
+*   **Advanced Inline Picker:** A full-featured file manager block with a nested folder tree sidebar and an actions panel for selected files.
 *   **Powerful Modal Picker:** Trigger a picker from any button to select files. Can be configured with simple data attributes or a global JavaScript event for advanced use cases.
-*   **WYSIWYG Editor:** A rich text editor component with a full suite of formatting tools, including custom dialogs for links and media.
+*   **WYSIWYG Editor:** A rich text editor component with a full suite of formatting tools, including custom dialogs for links and media. Double-click on media to edit its attributes.
 *   **Image Resizing:** On-the-fly image resizing and manipulation powered by The PHP League's Glide library.
 *   **Configurable:** Control allowed file types and max upload sizes via a publishable config file.
-*   **Modern Build:** Built with a clean, modular JavaScript and SCSS structure using Laravel Mix.
+*   **Modern Build:** Built with a clean, modular JavaScript and SCSS structure using Laravel Mix for optimal performance.
 
 ## Installation
 
@@ -26,7 +26,7 @@ composer require msdev2/media-picker
 
 ### Step 2: Publish Package Assets
 
-This essential command will copy the package's configuration file to your `config` directory, and the compiled CSS and JavaScript to your `public/vendor` directory.
+This essential command will publish the package's configuration file to your `config` directory, and the compiled CSS and JavaScript to your `public/vendor` directory.
 
 ```bash
 php artisan vendor:publish --provider="Msdev2\MediaPicker\MediaPickerServiceProvider"
@@ -34,7 +34,7 @@ php artisan vendor:publish --provider="Msdev2\MediaPicker\MediaPickerServiceProv
 
 ### Step 3: Set up Image Resizing (Glide)
 
-This package uses a custom, self-contained Glide implementation for image previews and resizing, which is configured in the package's service provider. **No separate Glide package or configuration is required in your main application.** This makes setup much simpler.
+This package's image resizing features rely on a self-contained Glide implementation configured in the package's service provider. This makes setup much simpler as you do not need to install or configure a separate Glide package in your main application.
 
 ### Step 4: Create the Storage Symlink
 
@@ -102,20 +102,15 @@ To display the full file manager directly on a page, use the Blade component wit
 <x-ms-media-picker :inline="true" />
 ```
 
-### Use Case 2: Modal Picker Button
+### Use Case 2: Modal Picker Button (The Easy Way)
 
-This is the most common use case. Trigger a modal picker from any button.
-
-#### The Easy Way (with Data Attributes)
-
-This is the recommended method for most situations. The package's JavaScript will automatically handle updating the target element. No custom JS is required.
+This is the recommended method for most situations. The package's JavaScript will automatically handle updating the target element. **No custom JS is required.**
 
 Add the `ms-media-picker` class and two data attributes:
-*   `data-target-selector`: A CSS selector for the element to update.
+*   `data-target-selector`: A CSS selector for the element to update (e.g., `#my-id`, `.my-class`).
 *   `data-target-type`: How to update the element (`input`, `image`, or `html`).
 
-**Example: Update an Input Field's Value**
-```blade
+**Example: Update an Input Field's Value**```blade
 <label for="featured_image_url">Featured Image URL</label>
 <input type="text" id="featured_image_url">
 <button type="button" class="ms-media-picker"
@@ -135,38 +130,61 @@ Add the `ms-media-picker` class and two data attributes:
 </button>
 ```
 
-#### The Advanced Way (with a Custom JavaScript Event)
+### Use Case 3: Modal Picker Button (The Advanced Way)
 
-For custom logic, you can use a generic button and listen for the global `ms-media-file-selected` event.
+For complex or custom logic, listen for the global `ms-media-file-selected` event. This is the most flexible method and allows you to handle multiple, different picker buttons on a single page.
 
-**1. The HTML Button**
+The key is to use the `event.detail.triggerElement` to identify which button opened the modal.
+
+**1. The HTML: Define Multiple Buttons with Unique IDs**
+
 ```blade
-<button type="button" id="my-custom-button" class="ms-media-picker">
-    Open Picker with Custom Logic
+<!-- Example 1: To update an <img> tag -->
+<img id="profile-preview" src="/placeholder.jpg" style="max-width: 150px;">
+<button type="button" id="profile-pic-btn" class="ms-media-picker">
+    Change Profile Picture
+</button>
+
+<!-- Example 2: To update an <input> field -->
+<label for="featured-image-input">Featured Image URL:</label>
+<input type="text" id="featured-image-input" name="featured_image">
+<button type="button" id="featured-image-btn" class="ms-media-picker">
+    Set Featured Image
 </button>
 ```
 
-**2. The JavaScript Listener**
+**2. The JavaScript: Create One Smart Event Listener**
+
+In your main application's JavaScript, create a single listener that checks the ID of the trigger element and routes the logic accordingly.
+
 ```javascript
 document.addEventListener('ms-media-file-selected', (event) => {
-    // The selected file object
+    // Get the selected file object from the event payload
     const file = event.detail.file;
     
-    // The button element that triggered the modal
+    // Get the button element that triggered the modal
     const trigger = event.detail.triggerElement;
 
-    console.log('File selected:', file);
-    console.log('Modal was opened by:', trigger);
-
-    // Your custom logic here...
-    if (trigger.id === 'my-custom-button') {
-        alert('You selected ' + file.name + ' using the custom button!');
+    // Use the trigger's ID to decide what action to perform
+    if (trigger.id === 'profile-pic-btn') {
+        // Logic for the profile picture button
+        const profileImage = document.getElementById('profile-preview');
+        if (profileImage) {
+            profileImage.src = file.url;
+        }
+    } 
+    else if (trigger.id === 'featured-image-btn') {
+        // Logic for the featured image button
+        const featuredImageInput = document.getElementById('featured-image-input');
+        if (featuredImageInput) {
+            featuredImageInput.value = file.url;
+        }
     }
 });
 ```
-The `file` object contains `name`, `url` (the public URL), `path`, `size`, and `is_image`.
+The `file` object contains `name`, `url` (the public URL), `path`, `size`, and `is_image`. This event-driven approach gives you full control to integrate the media picker anywhere in your application.
 
-### Use Case 3: The WYSIWYG Editor
+### Use Case 4: The WYSIWYG Editor
 
 Use the `x-ms-media-editor` component for a full-featured rich text editor.
 
@@ -187,6 +205,17 @@ Use the `x-ms-media-editor` component for a full-featured rich text editor.
     <x-ms-media-editor name="post_content" height="500px" :value="$existingContent" />
 </form>
 ```
+```blade
+@php
+    $existingContent = '<h2>Hello World</h2><p>This is some default content.</p>';
+@endphp
+
+<form>
+    <x-ms-media-editor name="post_content" height="500px">
+        {!! $existingContent !!}
+    </x-ms-media-editor>
+</form>
+```
 The editor features a full toolbar, including custom dialogs for inserting/editing links and media. Double-clicking an image or video in the editor will open the edit dialog.
 
 ## Image Resizing (Glide)
@@ -200,7 +229,7 @@ The package includes routes for on-the-fly image resizing. You can get resized v
 
 ## Development & Customization (Optional)
 
-This package uses Laravel Mix for asset compilation. If you wish to modify the JavaScript or SCSS source files, you must have Node.js and NPM installed.
+This package uses Laravel Mix for asset compilation. If you wish to modify the JavaScript or SCSS source files, you must have a compatible Node.js environment (LTS versions like 18.x are recommended).
 
 1.  Navigate to the package's root directory: `cd vendor/msdev2/media-picker`
 2.  Install NPM dependencies: `npm install`

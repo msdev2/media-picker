@@ -4,7 +4,10 @@
     'width' => '100%',
     'value' => ''
 ])
-
+@php
+    // takes precedence over the :value attribute. This makes it more flexible.
+    $initialContent = $slot->isNotEmpty() ? $slot : $value;
+@endphp
 <div class="ms-media-editor-container" {!! 'style="width: '.$width.'";' !!}>
     <div class="ms-editor-toolbar">
         {{-- Block format dropdown --}}
@@ -80,13 +83,12 @@
 
     {{-- The content area is now a wrapper --}}
     <div class="ms-editor-content-wrapper" {!! 'style="height: '.$height.'";' !!}>
-        <div class="ms-editor-content" contenteditable="true">{!! $value !!}</div>
-        {{-- Hidden textarea for code view --}}
-        <textarea class="ms-editor-code" name="ms-{{ $name }}" style="display: none;"></textarea>
+        <div class="ms-editor-content" contenteditable="true">{!! $initialContent !!}</div>
+        <textarea class="ms-editor-code" style="display: none;">{!! $initialContent !!}</textarea>
     </div>
     
     {{-- Hidden textarea for form submission --}}
-    <textarea name="{{ $name }}" class="ms-editor-form-input" style="display: none;">{{ $value }}</textarea>
+    <textarea name="{{ $name }}" class="ms-editor-form-input" style="display: none;">{!! $initialContent !!}</textarea>
 </div>
 <!-- NEW: Insert/Edit Media Modal -->
 <div class="ms-media-edit-modal-backdrop" style="display: none;">
