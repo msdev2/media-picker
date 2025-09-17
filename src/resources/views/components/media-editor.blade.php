@@ -5,10 +5,9 @@
     'value' => ''
 ])
 @php
-    // takes precedence over the :value attribute. This makes it more flexible.
     $initialContent = $slot->isNotEmpty() ? $slot : $value;
 @endphp
-<div class="ms-media-editor-container" {!! 'style="width: '.$width.'";' !!}>
+<div {{ $attributes->merge(['class' => 'ms-media-editor-container']) }} style="width: {{ $width }};">
     <div class="ms-editor-toolbar">
         {{-- Block format dropdown --}}
         <select class="ms-editor-tool ms-editor-dropdown" data-command="formatBlock">
@@ -88,7 +87,7 @@
     </div>
     
     {{-- Hidden textarea for form submission --}}
-    <textarea name="{{ $name }}" class="ms-editor-form-input" style="display: none;">{!! $initialContent !!}</textarea>
+    <textarea name="{{ $name }}" class="ms-editor-form-input" {{ $attributes }}   {{ $attributes->wire('model') }}>{!! $initialContent !!}</textarea>
 </div>
 <!-- NEW: Insert/Edit Media Modal -->
 <div class="ms-media-edit-modal-backdrop" style="display: none;">

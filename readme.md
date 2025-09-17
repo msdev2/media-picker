@@ -218,6 +218,27 @@ Use the `x-ms-media-editor` component for a full-featured rich text editor.
 ```
 The editor features a full toolbar, including custom dialogs for inserting/editing links and media. Double-clicking an image or video in the editor will open the edit dialog.
 
+**Listening for Editor Content Changes:**
+
+The editor dispatches a custom event whenever content changes, allowing you to react to updates in real-time:
+
+```javascript
+document.querySelector('.ms-media-editor').addEventListener('ms-editor-content-changed', (event) => {
+    const { content, plainText, codeView } = event.detail;
+    
+    console.log('HTML content:', content);
+    console.log('Plain text:', plainText);
+    console.log('Code view active:', codeView);
+    
+    // Your custom logic here
+});
+```
+
+The event provides:
+- `content`: Full HTML content of the editor
+- `plainText`: Plain text without HTML tags
+- `codeView`: Boolean indicating if code view is currently active
+
 ## Image Resizing (Glide)
 
 The package includes routes for on-the-fly image resizing. You can get resized versions of any image by manipulating the URL structure.

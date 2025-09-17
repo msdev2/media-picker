@@ -39,6 +39,24 @@ class Editor {
             this.ui.code.value = this.ui.content.innerHTML;
         }
         this.ui.formInput.value = this.ui.content.innerHTML;
+        this.ui.toolbar.addEventListener('mousedown', e => {
+            this.savedSelection = this.saveSelection();
+        });
+
+        // 🔥 NEW: when Livewire updates the textarea, reflect into editor
+        this.ui.formInput.addEventListener('input', () => {
+            if (this.ui.formInput.value !== this.ui.content.innerHTML) {
+                this.ui.content.innerHTML = this.ui.formInput.value;
+                this.ui.code.value = this.ui.formInput.value;
+            }
+        });
+        this.element.dispatchEvent(new CustomEvent('ms-editor-content-changed', {
+            detail: {
+                content: this.ui.content.innerHTML,
+                plainText: this.ui.content.textContent,
+                codeView: this.state.codeViewActive
+            }
+        }));
     }
     
     handleToolbarClick(e) {
@@ -302,4 +320,5 @@ class Editor {
         }
     }
 }
+window.Editor = Editor;
 export default Editor;

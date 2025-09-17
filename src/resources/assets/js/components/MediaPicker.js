@@ -201,15 +201,18 @@ class MediaPicker {
     
     async createFolder() {
         const prompt = new PromptModal();
-        const name = await prompt.open({
+        const result = await prompt.open({
             title: 'Create New Folder',
-            inputLabel: 'Folder Name',
-            confirmText: 'Create'
+            confirmText: 'Create',
+            fields: [{
+                name: 'folder_name',
+                label: 'Folder Name'
+            }]
         });
         
-        if (name) { // Only proceed if user confirmed
+        if (result && result.folder_name) {
             const formData = new FormData();
-            formData.append('folder_name', name);
+            formData.append('folder_name', result.folder_name);
             formData.append('current_path', this.state.currentPath);
             await postData('create-folder', formData).then(() => this.loadContents(this.state.currentPath)).catch(() => {});
         }
