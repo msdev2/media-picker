@@ -233,7 +233,7 @@ document.querySelector('.ms-media-editor').addEventListener('ms-editor-content-c
     // Your custom logic here
 });
 ```
-
+Also get complete editor object using window.MSSEditor 
 The event provides:
 - `content`: Full HTML content of the editor
 - `plainText`: Plain text without HTML tags

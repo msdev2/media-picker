@@ -50,6 +50,7 @@ class Editor {
                 this.ui.code.value = this.ui.formInput.value;
             }
         });
+        this.ui.formInput.dispatchEvent(new Event('input'))
         this.element.dispatchEvent(new CustomEvent('ms-editor-content-changed', {
             detail: {
                 content: this.ui.content.innerHTML,
@@ -320,5 +321,5 @@ class Editor {
         }
     }
 }
-window.Editor = Editor;
+window.MSSEditor = Editor;
 export default Editor;
