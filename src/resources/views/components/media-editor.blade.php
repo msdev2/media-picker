@@ -87,7 +87,7 @@
     </div>
     
     {{-- Hidden textarea for form submission --}}
-    <textarea name="{{ $name }}" class="ms-editor-form-input" {{ $attributes }}   {{ $attributes->wire('model') }}>{!! $initialContent !!}</textarea>
+    <textarea name="{{ $name }}" class="ms-editor-form-input" style="display:none" {{ $attributes }}   {{ $attributes->wire('model') }}>{!! $initialContent !!}</textarea>
 </div>
 <!-- NEW: Insert/Edit Media Modal -->
 <div class="ms-media-edit-modal-backdrop" style="display: none;">
