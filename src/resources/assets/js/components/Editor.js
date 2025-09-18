@@ -320,6 +320,12 @@ class Editor {
             selection.addRange(range);
         }
     }
+    destroy() {
+        // Remove event listeners, clear DOM refs, etc.
+        this.element = null;
+        this.ui = {};
+    }
+
 }
 window.MSSEditor = Editor;
 export default Editor;

@@ -338,6 +338,11 @@ class MediaPicker {
     showLoader(show) {
         if (this.ui.loader) this.ui.loader.style.display = show ? 'flex' : 'none';
     }
+    destroy() {
+        // Remove event listeners, clear DOM refs, etc.
+        this.element = null;
+        this.ui = {};
+    }
 }
 
 export default MediaPicker;
