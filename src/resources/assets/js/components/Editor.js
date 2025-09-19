@@ -3,7 +3,7 @@ import Toast from './Toast.js';
 import PromptModal from './PromptModal.js';
 
 class Editor {
-     constructor(element) {
+    constructor(element) {
         this.element = element;
         this.ui = {
             content: this.element.querySelector('.ms-editor-content'),
@@ -13,44 +13,55 @@ class Editor {
             editModal: document.querySelector('.ms-media-edit-modal-backdrop'),
         };
         this.state = { codeViewActive: false };
-        this.savedSelection = null; // NEW: Property to store the selection
+        this.savedSelection = null;
+        this._initialized = false;
+
         this.init();
     }
 
     init() {
-        this.sync();
-        this.ui.content.addEventListener('input', () => this.sync());
-        this.ui.code.addEventListener('input', () => this.sync());
-        this.ui.toolbar.addEventListener('click', e => this.handleToolbarClick(e));
-        this.ui.toolbar.addEventListener('change', e => this.handleToolbarChange(e));
-        this.ui.content.addEventListener('dblclick', e => this.handleMediaDoubleClick(e));
+        if (this._initialized) return;
+        this._initialized = true;
 
-        // CRITICAL FIX: Add a mousedown listener to the toolbar to save the selection
-        // before focus is lost to a color picker or other UI element.
-        this.ui.toolbar.addEventListener('mousedown', e => {
-            this.savedSelection = this.saveSelection();
-        });
-    }
-
-    sync() {
-        if (this.state.codeViewActive) {
-            this.ui.content.innerHTML = this.ui.code.value;
-        } else {
+        // Sync content → hidden input + code
+        this.ui.content.addEventListener('input', () => {
+            this.ui.formInput.value = this.ui.content.innerHTML;
             this.ui.code.value = this.ui.content.innerHTML;
-        }
-        this.ui.formInput.value = this.ui.content.innerHTML;
-        this.ui.toolbar.addEventListener('mousedown', e => {
-            this.savedSelection = this.saveSelection();
+            this.dispatchChange();
         });
 
-        // 🔥 NEW: when Livewire updates the textarea, reflect into editor
+        // Sync code → hidden input + content
+        this.ui.code.addEventListener('input', () => {
+            this.ui.content.innerHTML = this.ui.code.value;
+            this.ui.formInput.value = this.ui.code.value;
+            this.dispatchChange();
+        });
+
+        // Sync hidden input (e.g. Livewire hydration) → content + code
         this.ui.formInput.addEventListener('input', () => {
             if (this.ui.formInput.value !== this.ui.content.innerHTML) {
                 this.ui.content.innerHTML = this.ui.formInput.value;
                 this.ui.code.value = this.ui.formInput.value;
+                this.dispatchChange();
             }
         });
-        this.ui.formInput.dispatchEvent(new Event('input'))
+
+        // Toolbar events
+        this.ui.toolbar.addEventListener('click', e => this.handleToolbarClick(e));
+        this.ui.toolbar.addEventListener('change', e => this.handleToolbarChange(e));
+        this.ui.toolbar.addEventListener('mousedown', () => {
+            this.savedSelection = this.saveSelection();
+        });
+
+        // Double-click on media
+        this.ui.content.addEventListener('dblclick', e => this.handleMediaDoubleClick(e));
+
+        // Initial sync
+        this.ui.formInput.value = this.ui.content.innerHTML;
+        this.ui.code.value = this.ui.content.innerHTML;
+    }
+
+    dispatchChange() {
         this.element.dispatchEvent(new CustomEvent('ms-editor-content-changed', {
             detail: {
                 content: this.ui.content.innerHTML,
@@ -59,14 +70,14 @@ class Editor {
             }
         }));
     }
-    
+
     handleToolbarClick(e) {
         const target = e.target.closest('button');
         if (!target) return;
         e.preventDefault();
         const command = target.dataset.command;
-        
-        // Clicks on color picker labels should trigger the hidden input
+
+        // Click on color wrapper triggers input
         if (target.parentElement.classList.contains('ms-editor-tool-wrapper')) {
             target.parentElement.querySelector('input[type="color"]').click();
             return;
@@ -80,30 +91,30 @@ class Editor {
             this.execCmd(command);
         }
     }
-    
+
     handleToolbarChange(e) {
         const target = e.target.closest('select, input[type="color"]');
         if (!target) return;
         e.preventDefault();
         const command = target.dataset.command;
-        this.restoreSelection(this.savedSelection); // Restore the selection
-        this.execCmd(command, target.value); // Then execute the command
+        this.restoreSelection(this.savedSelection);
+        this.execCmd(command, target.value);
     }
 
     toggleCodeView(button) {
         this.state.codeViewActive = !this.state.codeViewActive;
         button.classList.toggle('active', this.state.codeViewActive);
-        this.sync();
         this.ui.content.style.display = this.state.codeViewActive ? 'none' : 'block';
         this.ui.code.style.display = this.state.codeViewActive ? 'block' : 'none';
     }
 
+    // === Media modal and edit dialog (same as your version) ===
     openMediaModal(mediaType) {
         const savedSelection = this.saveSelection();
         ModalManager.open((file) => {
             const isImage = file.name.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
             const isVideo = file.name.match(/\.(mp4|webm|ogg)$/i);
-            
+
             if ((mediaType === 'image' && !isImage) || (mediaType === 'video' && !isVideo)) {
                 return Toast.show(`Please select a valid ${mediaType} file.`, 'error');
             }
@@ -156,18 +167,18 @@ class Editor {
 
         title.textContent = editingElement ? 'Edit Media' : 'Insert Media';
         insertBtn.textContent = editingElement ? 'Update' : 'Insert';
-        
+
         previewImg.style.display = 'none';
         previewVideo.style.display = 'none';
-        
+
         if (data.type === 'image' || data.type === 'img') {
-             previewImg.style.display = 'block';
-             previewImg.src = data.src;
+            previewImg.style.display = 'block';
+            previewImg.src = data.src;
         } else if (data.type === 'video') {
-             previewVideo.style.display = 'block';
-             previewVideo.src = data.src;
+            previewVideo.style.display = 'block';
+            previewVideo.src = data.src;
         }
-        
+
         altInput.value = data.alt || '';
         widthInput.value = data.width || '';
         heightInput.value = data.height || '';
@@ -196,10 +207,10 @@ class Editor {
             element.alt = altInput.value;
             element.id = idInput.value;
             element.className = classInput.value;
-            
+
             element.style.width = widthInput.value ? `${widthInput.value}px` : '';
             element.style.height = heightInput.value ? `${heightInput.value}px` : '';
-            
+
             const align = alignSelect.value;
             element.style.float = (align === 'left' || align === 'right') ? align : '';
             element.style.display = align === 'center' ? 'block' : '';
@@ -209,8 +220,8 @@ class Editor {
             if (!editingElement) {
                 this._insertHtmlAtSelection(element, savedSelection);
             }
-            
-            this.sync();
+
+            this.dispatchChange();
             cleanup();
         };
 
@@ -218,7 +229,7 @@ class Editor {
         cancelBtn.onclick = cleanup;
         closeBtn.onclick = cleanup;
     }
-    
+
     _insertHtmlAtSelection(element, range) {
         this.ui.content.focus();
         if (!range) {
@@ -230,7 +241,7 @@ class Editor {
         selection.addRange(range);
         range.deleteContents();
         range.insertNode(element);
-        
+
         range = range.cloneRange();
         range.setStartAfter(element);
         range.collapse(true);
@@ -246,8 +257,9 @@ class Editor {
         }
         document.execCommand(command, false, value);
         this.ui.content.focus();
+        this.dispatchChange();
     }
-    
+
     async openLinkDialog() {
         const savedSelection = this.saveSelection();
         const anchorEl = this._getAnchorElement(savedSelection);
@@ -280,7 +292,7 @@ class Editor {
         if (result && result.url) {
             this.restoreSelection(savedSelection);
             document.execCommand('createLink', false, result.url);
-            
+
             const newAnchor = this._getAnchorElement(this.saveSelection());
             if (newAnchor) {
                 if (result.newTab) {
@@ -291,10 +303,10 @@ class Editor {
                     newAnchor.removeAttribute('rel');
                 }
             }
-            this.sync();
+            this.dispatchChange();
         }
     }
-    
+
     _getAnchorElement(selection) {
         if (!selection) return null;
         let node = selection.startContainer;
@@ -320,12 +332,13 @@ class Editor {
             selection.addRange(range);
         }
     }
+
     destroy() {
-        // Remove event listeners, clear DOM refs, etc.
         this.element = null;
         this.ui = {};
+        this._initialized = false;
     }
-
 }
+
 window.MSSEditor = Editor;
 export default Editor;
