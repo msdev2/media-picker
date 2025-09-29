@@ -29,7 +29,7 @@ composer require msdev2/media-picker
 This essential command will publish the package's configuration file to your `config` directory, and the compiled CSS and JavaScript to your `public/vendor` directory.
 
 ```bash
-php artisan vendor:publish --provider="Msdev2\MediaPicker\MediaPickerServiceProvider"
+php artisan vendor:publish --provider="Msdev2\MediaPicker\MediaPickerServiceProvider" --force
 ```
 
 ### Step 3: Set up Image Resizing (Glide)
@@ -110,11 +110,15 @@ Add the `ms-media-picker` class and two data attributes:
 *   `data-target-selector`: A CSS selector for the element to update (e.g., `#my-id`, `.my-class`).
 *   `data-target-type`: How to update the element (`input`, `image`, or `html`).
 
-**Example: Update an Input Field's Value**```blade
+**Example: Update an Input Field's Value**
+if data-target-preview then image id we have to pass and if "data-target-preview"+_preview div exist then auto set display:inline-block
+```blade
+<div id="featured_image_preview" style="display:none"><img src="" id="featured_image"></div>
 <label for="featured_image_url">Featured Image URL</label>
 <input type="text" id="featured_image_url">
 <button type="button" class="ms-media-picker"
         data-target-selector="#featured_image_url"
+        data-target-preview="#featured_image"
         data-target-type="input">
     Choose Image
 </button>

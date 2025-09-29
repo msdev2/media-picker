@@ -1,4 +1,4 @@
-import MediaPicker from './MediaPicker.js';
+import MediaPicker from '../components/MediaPicker.js';
 
 const ModalManager = {
     modalEl: null,

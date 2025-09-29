@@ -1,10 +1,15 @@
-import ModalManager from './ModalManager.js';
-import Toast from './Toast.js';
-import PromptModal from './PromptModal.js';
+import ModalManager from '../utils/ModalManager.js';
+import Toast from '../utils/Toast.js';
+import PromptModal from '../utils/PromptModal.js';
+import Logger from '../utils/Logger.js';
+
+const logger = new Logger('Editor');
 
 class Editor {
     constructor(element) {
+        logger.log('Constructor called for element:', element);
         this.element = element;
+
         this.ui = {
             content: this.element.querySelector('.ms-editor-content'),
             code: this.element.querySelector('.ms-editor-code'),
@@ -12,9 +17,21 @@ class Editor {
             toolbar: this.element.querySelector('.ms-editor-toolbar'),
             editModal: document.querySelector('.ms-media-edit-modal-backdrop'),
         };
+
+        logger.log('UI "content" found:', this.ui.content);
+        logger.log('UI "code" found:', this.ui.code);
+        logger.log('UI "formInput" found:', this.ui.formInput);
+        logger.log('UI "toolbar" found:', this.ui.toolbar);
+
         this.state = { codeViewActive: false };
         this.savedSelection = null;
         this._initialized = false;
+        this.handlers = {};
+
+        if (!this.ui.content || !this.ui.formInput || !this.ui.toolbar) {
+            logger.error('CRITICAL: Could not find essential UI elements. Aborting initialization.');
+            return;
+        }
 
         this.init();
     }
@@ -22,46 +39,56 @@ class Editor {
     init() {
         if (this._initialized) return;
         this._initialized = true;
+        logger.log('Init running.');
 
-        // Sync content → hidden input + code
-        this.ui.content.addEventListener('input', () => {
+        this.handlers.onContentInput = () => {
+            logger.log('Content "input" event fired.');
             this.ui.formInput.value = this.ui.content.innerHTML;
             this.ui.code.value = this.ui.content.innerHTML;
+            logger.log('Dispatching "input" event for Livewire.');
+            this.ui.formInput.dispatchEvent(new Event('input', { bubbles: true }));
             this.dispatchChange();
-        });
+        };
 
-        // Sync code → hidden input + content
-        this.ui.code.addEventListener('input', () => {
+        this.handlers.onCodeInput = () => {
+            logger.log('Code "input" event fired.');
             this.ui.content.innerHTML = this.ui.code.value;
             this.ui.formInput.value = this.ui.code.value;
+            logger.log('Dispatching "input" event for Livewire.');
+            this.ui.formInput.dispatchEvent(new Event('input', { bubbles: true }));
             this.dispatchChange();
-        });
+        };
 
-        // Sync hidden input (e.g. Livewire hydration) → content + code
-        this.ui.formInput.addEventListener('input', () => {
+        this.handlers.onFormInput = () => {
+            logger.log('Form input event fired (syncing from Livewire).');
             if (this.ui.formInput.value !== this.ui.content.innerHTML) {
                 this.ui.content.innerHTML = this.ui.formInput.value;
                 this.ui.code.value = this.ui.formInput.value;
                 this.dispatchChange();
             }
-        });
+        };
+        
+        this.handlers.onToolbarClick = e => this.handleToolbarClick(e);
+        this.handlers.onToolbarChange = e => this.handleToolbarChange(e);
+        this.handlers.onToolbarMouseDown = () => { this.savedSelection = this.saveSelection(); logger.log('Saved selection on mousedown.'); };
+        this.handlers.onContentDblClick = e => this.handleMediaDoubleClick(e);
 
-        // Toolbar events
-        this.ui.toolbar.addEventListener('click', e => this.handleToolbarClick(e));
-        this.ui.toolbar.addEventListener('change', e => this.handleToolbarChange(e));
-        this.ui.toolbar.addEventListener('mousedown', () => {
-            this.savedSelection = this.saveSelection();
-        });
-
-        // Double-click on media
-        this.ui.content.addEventListener('dblclick', e => this.handleMediaDoubleClick(e));
-
-        // Initial sync
+        this.ui.content.addEventListener('input', this.handlers.onContentInput);
+        this.ui.code.addEventListener('input', this.handlers.onCodeInput);
+        this.ui.formInput.addEventListener('input', this.handlers.onFormInput);
+        this.ui.toolbar.addEventListener('click', this.handlers.onToolbarClick);
+        this.ui.toolbar.addEventListener('change', this.handlers.onToolbarChange);
+        this.ui.toolbar.addEventListener('mousedown', this.handlers.onToolbarMouseDown);
+        this.ui.content.addEventListener('dblclick', this.handlers.onContentDblClick);
+        
+        logger.log('Event listeners attached.');
+        
         this.ui.formInput.value = this.ui.content.innerHTML;
         this.ui.code.value = this.ui.content.innerHTML;
     }
 
     dispatchChange() {
+        logger.log('Dispatching custom event: ms-editor-content-changed');
         this.element.dispatchEvent(new CustomEvent('ms-editor-content-changed', {
             detail: {
                 content: this.ui.content.innerHTML,
@@ -76,9 +103,10 @@ class Editor {
         if (!target) return;
         e.preventDefault();
         const command = target.dataset.command;
+        logger.log(`Toolbar button clicked. Command: ${command}`);
 
-        // Click on color wrapper triggers input
         if (target.parentElement.classList.contains('ms-editor-tool-wrapper')) {
+            logger.log('Color wrapper clicked, triggering color input.');
             target.parentElement.querySelector('input[type="color"]').click();
             return;
         }
@@ -97,36 +125,43 @@ class Editor {
         if (!target) return;
         e.preventDefault();
         const command = target.dataset.command;
+        const value = target.value;
+        logger.log(`Toolbar input changed. Command: ${command}, Value: ${value}`);
         this.restoreSelection(this.savedSelection);
-        this.execCmd(command, target.value);
+        this.execCmd(command, value);
     }
 
     toggleCodeView(button) {
         this.state.codeViewActive = !this.state.codeViewActive;
+        logger.log(`Toggling code view. New state: ${this.state.codeViewActive ? 'active' : 'inactive'}`);
         button.classList.toggle('active', this.state.codeViewActive);
         this.ui.content.style.display = this.state.codeViewActive ? 'none' : 'block';
         this.ui.code.style.display = this.state.codeViewActive ? 'block' : 'none';
     }
 
-    // === Media modal and edit dialog (same as your version) ===
     openMediaModal(mediaType) {
+        logger.log(`Opening media modal for media type: ${mediaType}`);
         const savedSelection = this.saveSelection();
         ModalManager.open((file) => {
+            logger.log('Media modal selected file:', file);
             const isImage = file.name.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i);
             const isVideo = file.name.match(/\.(mp4|webm|ogg)$/i);
 
             if ((mediaType === 'image' && !isImage) || (mediaType === 'video' && !isVideo)) {
-                return Toast.show(`Please select a valid ${mediaType} file.`, 'error');
+                const errorMsg = `Please select a valid ${mediaType} file.`;
+                logger.warn(errorMsg);
+                return Toast.show(errorMsg, 'error');
             }
-
             this.openEditDialog({ type: mediaType, src: file.url, alt: file.name }, savedSelection);
         });
     }
 
     handleMediaDoubleClick(e) {
         const target = e.target;
+        logger.log('Double click detected in content area on:', target);
         if (target.tagName === 'IMG' || target.tagName === 'VIDEO') {
             e.preventDefault();
+            logger.log('Double click was on an IMG or VIDEO, opening edit dialog.');
             let align = '';
             if (target.style.float === 'left' || target.style.float === 'right') {
                 align = target.style.float;
@@ -149,8 +184,9 @@ class Editor {
     }
 
     openEditDialog(data, savedSelection, editingElement = null) {
+        logger.log(`Opening edit dialog. Editing existing element: ${!!editingElement}`, data);
         const modal = this.ui.editModal;
-        if (!modal) return console.error("Edit Media Modal not found in DOM.");
+        if (!modal) return logger.error("Edit Media Modal not found in DOM.");
 
         const title = modal.querySelector('#ms-media-edit-title');
         const previewImg = modal.querySelector('#ms-media-edit-preview-img');
@@ -167,7 +203,6 @@ class Editor {
 
         title.textContent = editingElement ? 'Edit Media' : 'Insert Media';
         insertBtn.textContent = editingElement ? 'Update' : 'Insert';
-
         previewImg.style.display = 'none';
         previewVideo.style.display = 'none';
 
@@ -185,10 +220,10 @@ class Editor {
         alignSelect.value = data.align || '';
         classInput.value = data.className || '';
         idInput.value = data.id || '';
-
         modal.style.display = 'flex';
 
         const cleanup = () => {
+            logger.log('Cleaning up and closing edit dialog.');
             modal.style.display = 'none';
             insertBtn.onclick = null;
             cancelBtn.onclick = null;
@@ -196,6 +231,7 @@ class Editor {
         };
 
         const onInsert = () => {
+            logger.log('Insert/Update button clicked in edit dialog.');
             let element;
             if (editingElement) {
                 element = editingElement;
@@ -207,7 +243,6 @@ class Editor {
             element.alt = altInput.value;
             element.id = idInput.value;
             element.className = classInput.value;
-
             element.style.width = widthInput.value ? `${widthInput.value}px` : '';
             element.style.height = heightInput.value ? `${heightInput.value}px` : '';
 
@@ -221,7 +256,7 @@ class Editor {
                 this._insertHtmlAtSelection(element, savedSelection);
             }
 
-            this.dispatchChange();
+            this.handlers.onContentInput(); // Manually trigger sync after media insert/update
             cleanup();
         };
 
@@ -231,6 +266,7 @@ class Editor {
     }
 
     _insertHtmlAtSelection(element, range) {
+        logger.log('Inserting element at saved selection:', element);
         this.ui.content.focus();
         if (!range) {
             this.ui.content.appendChild(element);
@@ -241,7 +277,6 @@ class Editor {
         selection.addRange(range);
         range.deleteContents();
         range.insertNode(element);
-
         range = range.cloneRange();
         range.setStartAfter(element);
         range.collapse(true);
@@ -251,6 +286,7 @@ class Editor {
 
     execCmd(command, value = null) {
         if (!command) return;
+        logger.log(`Executing command: ${command} with value: ${value}`);
         if (command === 'createLink') {
             this.openLinkDialog();
             return;
@@ -261,11 +297,14 @@ class Editor {
     }
 
     async openLinkDialog() {
+        logger.log('Opening link dialog.');
         const savedSelection = this.saveSelection();
         const anchorEl = this._getAnchorElement(savedSelection);
 
         if (!anchorEl && savedSelection && savedSelection.collapsed) {
-            return Toast.show("Please select some text to create a link.", "error");
+            const errorMsg = "Please select some text to create a link.";
+            logger.warn(errorMsg);
+            return Toast.show(errorMsg, "error");
         }
 
         const prompt = new PromptModal();
@@ -273,26 +312,15 @@ class Editor {
             title: anchorEl ? 'Edit Link' : 'Insert Link',
             confirmText: anchorEl ? 'Update' : 'Insert',
             fields: [
-                {
-                    type: 'url',
-                    name: 'url',
-                    label: 'URL',
-                    value: anchorEl ? anchorEl.getAttribute('href') : 'https://',
-                    placeholder: 'https://example.com'
-                },
-                {
-                    type: 'checkbox',
-                    name: 'newTab',
-                    label: 'Open in new tab',
-                    checked: anchorEl ? anchorEl.target === '_blank' : false
-                }
+                { type: 'url', name: 'url', label: 'URL', value: anchorEl ? anchorEl.getAttribute('href') : 'https://', placeholder: 'https://example.com' },
+                { type: 'checkbox', name: 'newTab', label: 'Open in new tab', checked: anchorEl ? anchorEl.target === '_blank' : false }
             ]
         });
 
         if (result && result.url) {
+            logger.log('Link dialog submitted with result:', result);
             this.restoreSelection(savedSelection);
             document.execCommand('createLink', false, result.url);
-
             const newAnchor = this._getAnchorElement(this.saveSelection());
             if (newAnchor) {
                 if (result.newTab) {
@@ -304,6 +332,8 @@ class Editor {
                 }
             }
             this.dispatchChange();
+        } else {
+            logger.log('Link dialog was cancelled or submitted with no URL.');
         }
     }
 
@@ -319,24 +349,40 @@ class Editor {
     saveSelection() {
         const selection = window.getSelection();
         if (selection.rangeCount > 0 && this.ui.content.contains(selection.anchorNode)) {
+            logger.log('Saving selection range.');
             return selection.getRangeAt(0);
         }
+        logger.log('Could not save selection (not in editor).');
         return null;
     }
 
     restoreSelection(range) {
         if (range) {
+            logger.log('Restoring selection range.');
             this.ui.content.focus();
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
+        } else {
+            logger.log('No selection range to restore.');
         }
     }
 
     destroy() {
+        if (!this._initialized) return;
+        logger.warn('Destroying instance, removing event listeners.');
+        this.ui.content.removeEventListener('input', this.handlers.onContentInput);
+        this.ui.code.removeEventListener('input', this.handlers.onCodeInput);
+        this.ui.formInput.removeEventListener('input', this.handlers.onFormInput);
+        this.ui.toolbar.removeEventListener('click', this.handlers.onToolbarClick);
+        this.ui.toolbar.removeEventListener('change', this.handlers.onToolbarChange);
+        this.ui.toolbar.removeEventListener('mousedown', this.handlers.onToolbarMouseDown);
+        this.ui.content.removeEventListener('dblclick', this.handlers.onContentDblClick);
         this.element = null;
         this.ui = {};
+        this.handlers = {};
         this._initialized = false;
+        logger.log('Editor instance destroyed.');
     }
 }
 

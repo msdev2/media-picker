@@ -7,6 +7,10 @@
 @php
     $initialContent = $slot->isNotEmpty() ? $slot : $value;
 @endphp
+@once
+    @include('media-picker::_debug-script')
+@endonce
+
 <div {{ $attributes->merge(['class' => 'ms-media-editor-container']) }} style="width: {{ $width }};">
     <div class="ms-editor-toolbar">
         {{-- Block format dropdown --}}

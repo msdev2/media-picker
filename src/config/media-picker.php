@@ -10,7 +10,8 @@ return [
     | defined in your `config/filesystems.php` file.
     |
     */
-    'disk' => 'public',
+    'disk' =>  env('MEDIA_PICKER_DISK','public'),
+    'debug' => env('MEDIA_PICKER_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -21,7 +22,7 @@ return [
     | for the media picker will be managed.
     |
     */
-    'base_directory' => 'uploads',
+    'base_directory' => env('MEDIA_PICKER_BASE_DIRECTORY','uploads'),
      /*
     |--------------------------------------------------------------------------
     | Allowed MIME Types
@@ -56,5 +57,5 @@ return [
     | rule uses kilobytes. Default is 2048 (2MB). Set to 0 for no limit.
     |
     */
-    'max_upload_size_kb' => 2048,
+    'max_upload_size_kb' => env('MEDIA_PICKER_MAX_UPLOAD_SIZE_KB',2048),
 ];
