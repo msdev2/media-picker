@@ -386,5 +386,5 @@ class MediaPicker {
         logger.log('MediaPicker instance destroyed.');
     }
 }
-
+window.MSSMediaPicker = MediaPicker;
 export default MediaPicker;

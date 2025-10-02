@@ -27,6 +27,8 @@ class Editor {
         this.savedSelection = null;
         this._initialized = false;
         this.handlers = {};
+        // V-- NEW PROPERTY FOR OUR OBSERVER --V
+        this.contentObserver = null;
 
         if (!this.ui.content || !this.ui.formInput || !this.ui.toolbar) {
             logger.error('CRITICAL: Could not find essential UI elements. Aborting initialization.');
@@ -41,55 +43,77 @@ class Editor {
         this._initialized = true;
         logger.log('Init running.');
 
+        this.ui.content.innerHTML = this.ui.formInput.value;
+        this.ui.code.value = this.ui.formInput.value;
+
+        // --- Event Handlers for Synchronization ---
+        // This handler function itself is correct. The problem is how it's being called.
         this.handlers.onContentInput = () => {
             logger.log('Content "input" event fired.');
-            this.ui.formInput.value = this.ui.content.innerHTML;
-            this.ui.code.value = this.ui.content.innerHTML;
-            logger.log('Dispatching "input" event for Livewire.');
-            this.ui.formInput.dispatchEvent(new Event('input', { bubbles: true }));
-            this.dispatchChange();
+            const newContent = this.ui.content.innerHTML;
+            if (this.ui.formInput.value !== newContent) {
+                this.ui.formInput.value = newContent;
+                this.ui.code.value = newContent;
+                this.dispatchChange()
+            }
         };
-
+        
+        // This handler is working correctly, no changes needed.
         this.handlers.onCodeInput = () => {
             logger.log('Code "input" event fired.');
-            this.ui.content.innerHTML = this.ui.code.value;
-            this.ui.formInput.value = this.ui.code.value;
-            logger.log('Dispatching "input" event for Livewire.');
-            this.ui.formInput.dispatchEvent(new Event('input', { bubbles: true }));
-            this.dispatchChange();
+            const newCode = this.ui.code.value;
+            if (this.ui.formInput.value !== newCode) {
+                this.ui.content.innerHTML = newCode;
+                this.ui.formInput.value = newCode;
+                this.dispatchChange()
+            }
         };
 
-        this.handlers.onFormInput = () => {
+        // This handler is working correctly, no changes needed.
+        this.handlers.onFormInput = (e) => {
             logger.log('Form input event fired (syncing from Livewire).');
-            if (this.ui.formInput.value !== this.ui.content.innerHTML) {
+            if (e.isTrusted && this.ui.formInput.value !== this.ui.content.innerHTML) {
                 this.ui.content.innerHTML = this.ui.formInput.value;
                 this.ui.code.value = this.ui.formInput.value;
                 this.dispatchChange();
             }
         };
-        
+
+        // Other handlers...
         this.handlers.onToolbarClick = e => this.handleToolbarClick(e);
         this.handlers.onToolbarChange = e => this.handleToolbarChange(e);
-        this.handlers.onToolbarMouseDown = () => { this.savedSelection = this.saveSelection(); logger.log('Saved selection on mousedown.'); };
+        this.handlers.onToolbarMouseDown = (e) => { e.preventDefault(); this.savedSelection = this.saveSelection(); };
         this.handlers.onContentDblClick = e => this.handleMediaDoubleClick(e);
 
-        this.ui.content.addEventListener('input', this.handlers.onContentInput);
+        // We are replacing the unreliable 'input' event listener with a MutationObserver.
+        
+        // 1. Create the observer. Its callback is our existing handler function.
+        this.contentObserver = new MutationObserver(this.handlers.onContentInput);
+
+        // 2. Tell the observer to watch the contenteditable div for any changes to its
+        //    content, text, or child elements.
+        this.contentObserver.observe(this.ui.content, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+        });
+        // These listeners are working fine, so we keep them.
         this.ui.code.addEventListener('input', this.handlers.onCodeInput);
         this.ui.formInput.addEventListener('input', this.handlers.onFormInput);
         this.ui.toolbar.addEventListener('click', this.handlers.onToolbarClick);
         this.ui.toolbar.addEventListener('change', this.handlers.onToolbarChange);
         this.ui.toolbar.addEventListener('mousedown', this.handlers.onToolbarMouseDown);
         this.ui.content.addEventListener('dblclick', this.handlers.onContentDblClick);
-        
-        logger.log('Event listeners attached.');
-        
-        this.ui.formInput.value = this.ui.content.innerHTML;
-        this.ui.code.value = this.ui.content.innerHTML;
+
+        logger.log('Editor event listeners attached (using MutationObserver).');
     }
+
 
     dispatchChange() {
         logger.log('Dispatching custom event: ms-editor-content-changed');
+        this.ui.formInput.dispatchEvent(new Event('input', { bubbles: true }));
         this.element.dispatchEvent(new CustomEvent('ms-editor-content-changed', {
+            bubbles: true,
             detail: {
                 content: this.ui.content.innerHTML,
                 plainText: this.ui.content.textContent,
@@ -101,7 +125,7 @@ class Editor {
     handleToolbarClick(e) {
         const target = e.target.closest('button');
         if (!target) return;
-        e.preventDefault();
+
         const command = target.dataset.command;
         logger.log(`Toolbar button clicked. Command: ${command}`);
 
@@ -123,11 +147,10 @@ class Editor {
     handleToolbarChange(e) {
         const target = e.target.closest('select, input[type="color"]');
         if (!target) return;
-        e.preventDefault();
+
         const command = target.dataset.command;
         const value = target.value;
         logger.log(`Toolbar input changed. Command: ${command}, Value: ${value}`);
-        this.restoreSelection(this.savedSelection);
         this.execCmd(command, value);
     }
 
@@ -137,6 +160,10 @@ class Editor {
         button.classList.toggle('active', this.state.codeViewActive);
         this.ui.content.style.display = this.state.codeViewActive ? 'none' : 'block';
         this.ui.code.style.display = this.state.codeViewActive ? 'block' : 'none';
+        // If switching to code view, ensure its content is up-to-date
+        if (this.state.codeViewActive) {
+            this.ui.code.value = this.ui.content.innerHTML;
+        }
     }
 
     openMediaModal(mediaType) {
@@ -165,7 +192,7 @@ class Editor {
             let align = '';
             if (target.style.float === 'left' || target.style.float === 'right') {
                 align = target.style.float;
-            } else if (target.style.display === 'block' && (target.style.marginLeft === 'auto' || target.style.marginRight === 'auto')) {
+            } else if (target.style.display === 'block' && target.style.marginLeft === 'auto' && target.style.marginRight === 'auto') {
                 align = 'center';
             }
 
@@ -185,9 +212,9 @@ class Editor {
 
     openEditDialog(data, savedSelection, editingElement = null) {
         logger.log(`Opening edit dialog. Editing existing element: ${!!editingElement}`, data);
-        const modal = this.ui.editModal;
-        if (!modal) return logger.error("Edit Media Modal not found in DOM.");
+        if (!this.ui.editModal) return logger.error("Edit Media Modal not found in DOM.");
 
+        const modal = this.ui.editModal;
         const title = modal.querySelector('#ms-media-edit-title');
         const previewImg = modal.querySelector('#ms-media-edit-preview-img');
         const previewVideo = modal.querySelector('#ms-media-edit-preview-video');
@@ -212,6 +239,7 @@ class Editor {
         } else if (data.type === 'video') {
             previewVideo.style.display = 'block';
             previewVideo.src = data.src;
+            previewVideo.load(); // Ensure video preview loads
         }
 
         altInput.value = data.alt || '';
@@ -230,7 +258,7 @@ class Editor {
             closeBtn.onclick = null;
         };
 
-        const onInsert = () => {
+        insertBtn.onclick = () => {
             logger.log('Insert/Update button clicked in edit dialog.');
             let element;
             if (editingElement) {
@@ -260,40 +288,49 @@ class Editor {
             cleanup();
         };
 
-        insertBtn.onclick = onInsert;
         cancelBtn.onclick = cleanup;
         closeBtn.onclick = cleanup;
     }
 
     _insertHtmlAtSelection(element, range) {
         logger.log('Inserting element at saved selection:', element);
-        this.ui.content.focus();
-        if (!range) {
-            this.ui.content.appendChild(element);
+        this.restoreSelection(range);
+
+        // After restoring, get the current selection to insert the node
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) {
+            this.ui.content.appendChild(element); // Fallback if no range
             return;
         }
-        const selection = window.getSelection();
+        const currentRange = selection.getRangeAt(0);
+        currentRange.deleteContents();
+        currentRange.insertNode(element);
+
+        // Place cursor after the newly inserted element for a better UX
+        const newRange = document.createRange();
+        newRange.setStartAfter(element);
+        newRange.collapse(true);
         selection.removeAllRanges();
-        selection.addRange(range);
-        range.deleteContents();
-        range.insertNode(element);
-        range = range.cloneRange();
-        range.setStartAfter(element);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        selection.addRange(newRange);
     }
 
     execCmd(command, value = null) {
         if (!command) return;
+
+        // LIVEWIRE FIX: Restore the selection *before* executing the command.
+        // This ensures the formatting is applied where the user's cursor was,
+        // not where the focus is now (e.g., on the button).
+        this.restoreSelection(this.savedSelection);
+
         logger.log(`Executing command: ${command} with value: ${value}`);
         if (command === 'createLink') {
-            this.openLinkDialog();
+            this.openLinkDialog(); // This command has its own selection handling
             return;
         }
+
         document.execCommand(command, false, value);
-        this.ui.content.focus();
-        this.dispatchChange();
+        this.ui.content.focus(); // Re-focus the editor after command execution.
+        this.handlers.onContentInput(); // Manually trigger a sync after any command.
     }
 
     async openLinkDialog() {
@@ -317,11 +354,13 @@ class Editor {
             ]
         });
 
+        this.restoreSelection(savedSelection);
+
         if (result && result.url) {
             logger.log('Link dialog submitted with result:', result);
-            this.restoreSelection(savedSelection);
             document.execCommand('createLink', false, result.url);
-            const newAnchor = this._getAnchorElement(this.saveSelection());
+            // Re-select the link to modify its attributes
+            const newAnchor = this._getAnchorElement(window.getSelection().getRangeAt(0));
             if (newAnchor) {
                 if (result.newTab) {
                     newAnchor.target = '_blank';
@@ -331,7 +370,7 @@ class Editor {
                     newAnchor.removeAttribute('rel');
                 }
             }
-            this.dispatchChange();
+            this.handlers.onContentInput();
         } else {
             logger.log('Link dialog was cancelled or submitted with no URL.');
         }
@@ -359,25 +398,40 @@ class Editor {
     restoreSelection(range) {
         if (range) {
             logger.log('Restoring selection range.');
-            this.ui.content.focus();
+            this.ui.content.focus(); // Important: Editor must have focus to restore selection
             const selection = window.getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
         } else {
-            logger.log('No selection range to restore.');
+            logger.log('No selection range to restore, focusing editor.');
+            this.ui.content.focus();
         }
+    }
+    /**
+     * Programmatically sets the content of the editor from an external source.
+     * This is the dedicated method for Livewire to push updates into the editor.
+     * @param {string} html The new HTML content.
+     */
+    setContent(html) {
+        if (this.ui.content.innerHTML === html) return;
+        this.ui.content.innerHTML = html;
+        this.ui.code.value = html;
+        this.ui.formInput.value = html;
     }
 
     destroy() {
         if (!this._initialized) return;
         logger.warn('Destroying instance, removing event listeners.');
-        this.ui.content.removeEventListener('input', this.handlers.onContentInput);
+        
+        // V-- NEW: Disconnect the observer to prevent memory leaks --V
+        if (this.contentObserver) {
+            this.contentObserver.disconnect();
+        }
+
         this.ui.code.removeEventListener('input', this.handlers.onCodeInput);
         this.ui.formInput.removeEventListener('input', this.handlers.onFormInput);
         this.ui.toolbar.removeEventListener('click', this.handlers.onToolbarClick);
-        this.ui.toolbar.removeEventListener('change', this.handlers.onToolbarChange);
-        this.ui.toolbar.removeEventListener('mousedown', this.handlers.onToolbarMouseDown);
-        this.ui.content.removeEventListener('dblclick', this.handlers.onContentDblClick);
+        this.element.__editorInstance = null;
         this.element = null;
         this.ui = {};
         this.handlers = {};
