@@ -12,6 +12,9 @@
                 Upload File
                 <input type="file" class="ms-upload-file-input" style="display: none;" accept="{{ $acceptString }}">
             </label>
+            <div class="ms-media-search">
+                <input type="search" class="ms-media-search-input" placeholder="Search files, folders, date (YYYY-MM-DD)">
+            </div>
         </div>
     </div>
 

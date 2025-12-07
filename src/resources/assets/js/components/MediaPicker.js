@@ -11,7 +11,12 @@ class MediaPicker {
         logger.log('Constructor called for element:', element, 'with options:', options);
         this.element = element;
         this.options = { isInline: false, onSelect: null, ...options };
-        this.state = { currentPath: '/', selectedFile: null, contents: { files: [], directories: [], all_directories: [] } };
+        this.state = {
+            currentPath: '/',
+            selectedFile: null,
+            searchTerm: '',
+            contents: { files: [], directories: [], all_directories: [] }
+        };
         
         this.ui = {
             body: this.element.querySelector('.ms-media-body'),
@@ -21,6 +26,7 @@ class MediaPicker {
             actionsPanel: this.element.querySelector('.ms-media-actions-panel'),
             createFolderBtn: this.element.querySelector('.ms-create-folder-btn'),
             uploadInput: this.element.querySelector('.ms-upload-file-input'),
+            searchInput: this.element.querySelector('.ms-media-search-input'),
             folderTree: this.element.querySelector('.ms-media-folder-tree'),
         };
         this.handlers = {};
@@ -41,6 +47,7 @@ class MediaPicker {
         this.handlers.onUploadInputChange = e => this.uploadFile(e);
         this.handlers.onBreadcrumbClick = e => this.handleBreadcrumbClick(e);
         this.handlers.onSelectBtnClick = () => this.handleSelect();
+        this.handlers.onSearchInput = e => this.handleSearchInput(e);
 
         if (this.ui.body) this.ui.body.addEventListener('click', this.handlers.onBodyClick);
         if (this.ui.folderTree) this.ui.folderTree.addEventListener('click', this.handlers.onFolderTreeClick);
@@ -48,6 +55,7 @@ class MediaPicker {
         if (this.ui.uploadInput) this.ui.uploadInput.addEventListener('change', this.handlers.onUploadInputChange);
         if (this.ui.breadcrumbs) this.ui.breadcrumbs.addEventListener('click', this.handlers.onBreadcrumbClick);
         if (this.ui.selectBtn) this.ui.selectBtn.addEventListener('click', this.handlers.onSelectBtnClick);
+        if (this.ui.searchInput) this.ui.searchInput.addEventListener('input', this.handlers.onSearchInput);
 
         if (this.ui.actionsPanel) {
              const query = (selector) => this.ui.actionsPanel.querySelector(selector);
@@ -70,7 +78,8 @@ class MediaPicker {
         this.hideActionsPanel();
         this.state.currentPath = folder;
         try {
-            const data = await fetch(`/media-picker/get-contents?folder=${encodeURIComponent(folder)}`).then(res => res.json());
+                const search = this.state.searchTerm ? `&search=${encodeURIComponent(this.state.searchTerm)}` : '';
+                const data = await fetch(`/media-picker/get-contents?folder=${encodeURIComponent(folder)}${search}`).then(res => res.json());
             this.state.contents = data;
             logger.log('Contents loaded successfully:', data);
             this.render();
@@ -79,6 +88,15 @@ class MediaPicker {
         } finally {
             this.showLoader(false);
         }
+    }
+
+    handleSearchInput(e) {
+        const term = e.target.value.trim();
+        if (this.searchDebounce) clearTimeout(this.searchDebounce);
+        this.searchDebounce = setTimeout(() => {
+            this.state.searchTerm = term;
+            this.loadContents(this.state.currentPath);
+        }, 250);
     }
 
     render() {

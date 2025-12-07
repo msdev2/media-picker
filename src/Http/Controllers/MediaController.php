@@ -156,6 +156,25 @@ class MediaController extends Controller
     public function getContents(Request $request)
     {
         $folder = $request->input('folder', '/');
+        $searchRaw = trim($request->input('search', ''));
+        $search = Str::lower($searchRaw);
+        $searchDate = ($searchRaw && preg_match('/^\d{4}-\d{2}-\d{2}$/', $searchRaw)) ? $searchRaw : null;
+
+        $matchesSearch = function (array $item) use ($search, $searchDate) {
+            if ($search === '') {
+                return true;
+            }
+
+            $nameMatch = Str::contains(Str::lower($item['name'] ?? ''), $search);
+
+            $dateMatch = false;
+            if ($searchDate && isset($item['last_modified'])) {
+                $dateMatch = date('Y-m-d', $item['last_modified']) === $searchDate;
+            }
+
+            return $nameMatch || $dateMatch;
+        };
+
         $path = $this->cleanPath($this->baseDir . '/' . $folder);
 
         // --- FILTER FOR CURRENT DIRECTORY VIEW ---
@@ -181,9 +200,12 @@ class MediaController extends Controller
         
         $baseDirName = config('media-picker.base_directory', 'uploads');
 
+        $directoryItems = array_map([$this, 'formatDirectory'], $directories);
+        $fileItems = array_map([$this, 'formatFile'], $files);
+
         $contents = [
-            'directories' => array_map([$this, 'formatDirectory'], $directories),
-            'files' => array_map([$this, 'formatFile'], $files),
+            'directories' => array_values(array_filter($directoryItems, $matchesSearch)),
+            'files' => array_values(array_filter($fileItems, $matchesSearch)),
             'breadcrumbs' => $this->generateBreadcrumbs($folder),
             'all_directories' => $this->buildDirectoryTree($allDirectoriesPaths, $baseDirName),
         ];
