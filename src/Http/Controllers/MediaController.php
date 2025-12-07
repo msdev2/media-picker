@@ -156,6 +156,7 @@ class MediaController extends Controller
     public function getContents(Request $request)
     {
         $folder = $request->input('folder', '/');
+        $type = $request->input('type', 'all');
         $searchRaw = trim($request->input('search', ''));
         $search = Str::lower($searchRaw);
         $searchDate = ($searchRaw && preg_match('/^\d{4}-\d{2}-\d{2}$/', $searchRaw)) ? $searchRaw : null;
@@ -202,6 +203,13 @@ class MediaController extends Controller
 
         $directoryItems = array_map([$this, 'formatDirectory'], $directories);
         $fileItems = array_map([$this, 'formatFile'], $files);
+
+        // Apply type filtering if requested
+        if ($type === 'image') {
+            $fileItems = array_values(array_filter($fileItems, fn($f) => ($f['is_image'] ?? false)));
+        } elseif ($type === 'video') {
+            $fileItems = array_values(array_filter($fileItems, fn($f) => isset($f['mime']) ? Str::startsWith($f['mime'], 'video/') : false));
+        }
 
         $contents = [
             'directories' => array_values(array_filter($directoryItems, $matchesSearch)),
@@ -347,24 +355,24 @@ class MediaController extends Controller
     
      private function formatFile($path)
     {
-        // This method requires the `local` disk driver to be used for mime type detection.
-        // For S3 or other drivers, you would need a different strategy.
-        $isImage = Str::startsWith(Storage::disk($this->disk)->mimeType($path), 'image/');
-        
+        // Detect mime type in a driver-agnostic way
+        $mime = Storage::disk($this->disk)->mimeType($path);
+        $isImage = Str::startsWith($mime, 'image/');
+
         // The internal URL for previews inside the picker
         $renderUrl = route('media-picker.renderFile', ['path' => base64_encode($path)]);
 
-        // THE CRITICAL FIX: The real, direct public URL for the file.
-        // This relies on the user having their filesystem correctly configured (e.g., `storage:link`).
+        // The real, direct public URL for the file (requires proper storage config)
         $publicUrl = Storage::disk($this->disk)->url($path);
 
         return [
             'name' => basename($path),
             'path' => $path,
-            'url' => $renderUrl,          // Used for internal previews
-            'public_url' => $publicUrl, // The REAL public URL
+            'url' => $renderUrl,
+            'public_url' => $publicUrl,
             'type' => 'file',
             'is_image' => $isImage,
+            'mime' => $mime,
             'size' => Storage::disk($this->disk)->size($path),
             'last_modified' => Storage::disk($this->disk)->lastModified($path),
         ];

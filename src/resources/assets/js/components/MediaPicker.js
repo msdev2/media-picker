@@ -15,6 +15,7 @@ class MediaPicker {
             currentPath: '/',
             selectedFile: null,
             searchTerm: '',
+            mediaFilter: 'all',
             contents: { files: [], directories: [], all_directories: [] }
         };
         
@@ -53,6 +54,10 @@ class MediaPicker {
         if (this.ui.folderTree) this.ui.folderTree.addEventListener('click', this.handlers.onFolderTreeClick);
         if (this.ui.createFolderBtn) this.ui.createFolderBtn.addEventListener('click', this.handlers.onCreateFolderClick);
         if (this.ui.uploadInput) this.ui.uploadInput.addEventListener('change', this.handlers.onUploadInputChange);
+        // Listen for filter button clicks in the header actions (delegated)
+        const actions = this.element.querySelector('.ms-media-actions');
+        this.handlers.onActionsClick = e => this.handleActionsClick(e);
+        if (actions) actions.addEventListener('click', this.handlers.onActionsClick);
         if (this.ui.breadcrumbs) this.ui.breadcrumbs.addEventListener('click', this.handlers.onBreadcrumbClick);
         if (this.ui.selectBtn) this.ui.selectBtn.addEventListener('click', this.handlers.onSelectBtnClick);
         if (this.ui.searchInput) this.ui.searchInput.addEventListener('input', this.handlers.onSearchInput);
@@ -79,7 +84,8 @@ class MediaPicker {
         this.state.currentPath = folder;
         try {
                 const search = this.state.searchTerm ? `&search=${encodeURIComponent(this.state.searchTerm)}` : '';
-                const data = await fetch(`/media-picker/get-contents?folder=${encodeURIComponent(folder)}${search}`).then(res => res.json());
+                const type = this.state.mediaFilter && this.state.mediaFilter !== 'all' ? `&type=${encodeURIComponent(this.state.mediaFilter)}` : '';
+                const data = await fetch(`/media-picker/get-contents?folder=${encodeURIComponent(folder)}${search}${type}`).then(res => res.json());
             this.state.contents = data;
             logger.log('Contents loaded successfully:', data);
             this.render();
@@ -97,6 +103,20 @@ class MediaPicker {
             this.state.searchTerm = term;
             this.loadContents(this.state.currentPath);
         }, 250);
+    }
+
+    handleActionsClick(e) {
+        const btn = e.target.closest('.ms-media-filter-btn');
+        if (!btn) return;
+        const filter = btn.dataset.filter || 'all';
+        // toggle active class
+        const container = this.element.querySelector('.ms-media-filters');
+        if (container) {
+            container.querySelectorAll('.ms-media-filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+        }
+        if (this.state.mediaFilter === filter) return; // no change
+        this.state.mediaFilter = filter;
+        this.loadContents(this.state.currentPath);
     }
 
     render() {

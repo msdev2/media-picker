@@ -11,6 +11,14 @@ const ModalManager = {
                 <div class="ms-media-header">
                     <nav class="ms-media-breadcrumbs"></nav>
                     <div class="ms-media-actions">
+                        <div class="ms-media-filters">
+                            <button type="button" class="ms-media-filter-btn active" data-filter="all">All</button>
+                            <button type="button" class="ms-media-filter-btn" data-filter="image">Images</button>
+                            <button type="button" class="ms-media-filter-btn" data-filter="video">Videos</button>
+                        </div>
+                        <div class="ms-media-search">
+                            <input type="search" class="ms-media-search-input" placeholder="Search files, folders, date (YYYY-MM-DD)">
+                        </div>
                         <button type="button" class="ms-media-btn ms-create-folder-btn">New Folder</button>
                         <label class="ms-media-btn ms-media-btn-primary">
                             Upload File <input type="file" class="ms-upload-file-input" style="display: none;" accept="${acceptString}">

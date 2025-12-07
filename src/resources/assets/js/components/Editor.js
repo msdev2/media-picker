@@ -138,7 +138,7 @@ class Editor {
         if (target.classList.contains('ms-code-view-btn')) {
             this.toggleCodeView(target);
         } else if (target.classList.contains('ms-add-media-btn')) {
-            this.openMediaModal(target.dataset.mediaType);
+            this.openMediaModal(target.dataset.mediaType, target);
         } else {
             this.execCmd(command);
         }
@@ -166,7 +166,7 @@ class Editor {
         }
     }
 
-    openMediaModal(mediaType) {
+    openMediaModal(mediaType, triggerEl = null) {
         logger.log(`Opening media modal for media type: ${mediaType}`);
         const savedSelection = this.saveSelection();
         ModalManager.open((file) => {
@@ -180,7 +180,7 @@ class Editor {
                 return Toast.show(errorMsg, 'error');
             }
             this.openEditDialog({ type: mediaType, src: file.url, alt: file.name }, savedSelection);
-        });
+        }, '', triggerEl);
     }
 
     handleMediaDoubleClick(e) {
